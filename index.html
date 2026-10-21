@@ -38,7 +38,6 @@
     .btn-green { background: #10b981; }
     .btn-amber { background: #d97706; }
 
-    /* SQUARE SHAPED DOCTOR CARD */
     .doctor-item { 
       background: #ffffff; 
       border: 1.5px solid #cbd5e1; 
@@ -99,6 +98,11 @@
   </style>
 </head>
 <body>
+
+  <!-- SILENT AUDIO HARDWARE WAKE ELEMENT -->
+  <audio id="bg-keep-alive-audio" loop playsinline preload="auto" style="display:none;">
+    <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" type="audio/wav">
+  </audio>
 
   <!-- MR LOGIN OVERLAY SCREEN -->
   <div id="mr-login-screen">
@@ -254,7 +258,6 @@
     let selectedDoctorForPOB = null;
     let selectedDoctorLocation = {};
     let liveWatchId = null;
-    let periodicLocationInterval = null;
 
     // Stoppage Monitoring Variables (100 Meter Radius)
     let lastKnownStationaryLat = null;
@@ -263,17 +266,61 @@
     let yellowAlertSent = false;
     let redAlertSent = false;
 
-    // BACKGROUND SILENT AUDIO WAKE-LOOP (To prevent browser throttling)
-    const backgroundAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
-    backgroundAudio.loop = true;
+    // -------------------------------------------------------------
+    // BACKGROUND KEEP-ALIVE SYSTEM: REAL AUDIO LOOP + HARDWARE KEEP-ALIVE
+    // -------------------------------------------------------------
+    const bgAudio = document.getElementById("bg-keep-alive-audio");
+    let bgInterval = null;
+    let lastGpsTriggerTime = 0;
+    let isPinging = false;
 
-    function activateBackgroundKeepAlive() {
-      backgroundAudio.play().catch(() => {});
+    function startBackgroundKeepAlive() {
+      if (bgAudio) {
+        bgAudio.volume = 0.01;
+        bgAudio.play().then(() => {
+          console.log("Hardware media active in background");
+        }).catch(err => console.log("Audio play error:", err));
+      }
+
       if ('wakeLock' in navigator) {
         navigator.wakeLock.request('screen').catch(() => {});
       }
+
+      // Safe single loop - checks every 10 seconds, fires ping after minimum 55 seconds
+      if (bgInterval) clearInterval(bgInterval);
+      bgInterval = setInterval(() => {
+        if (!punchedIn) return;
+        const now = Date.now();
+        if (now - lastGpsTriggerTime >= 55000) {
+          lastGpsTriggerTime = now;
+          triggerPeriodicGPSUpdate();
+        }
+      }, 10000);
     }
-    document.addEventListener('click', activateBackgroundKeepAlive, { once: true });
+
+    function stopBackgroundKeepAlive() {
+      if (bgAudio) {
+        bgAudio.pause();
+      }
+      if (bgInterval) {
+        clearInterval(bgInterval);
+        bgInterval = null;
+      }
+    }
+
+    // Touch listener to resume audio if paused
+    document.addEventListener('touchstart', function unlockAudio() {
+      if (bgAudio && bgAudio.paused && punchedIn) {
+        bgAudio.play().catch(() => {});
+      }
+    }, { once: false });
+
+    document.addEventListener('visibilitychange', () => {
+      if (punchedIn) {
+        if (bgAudio && bgAudio.paused) bgAudio.play().catch(() => {});
+        if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(() => {});
+      }
+    });
 
     function getTodayDateString() { return new Date().toISOString().split('T')[0]; }
     function getCurrentMonthString() { return new Date().toISOString().substring(0, 7); }
@@ -329,7 +376,6 @@
         document.getElementById("mr-login-screen").style.display = "none";
         document.getElementById("login-pin-input").value = "";
 
-        activateBackgroundKeepAlive();
         initPersistentPunchState();
         updateMRCashDisplay();
         loadBeltDoctors();
@@ -348,6 +394,7 @@
       document.getElementById("login-pin-input").value = "";
       document.getElementById("login-error-msg").style.display = "none";
       document.getElementById("mr-login-screen").style.display = "flex";
+      stopBackgroundKeepAlive();
     }
 
     // UNIVERSAL OWNER NOTIFICATION FUNCTION
@@ -424,17 +471,15 @@
         statusEl.innerText = "Active in Field";
         startSessionTimerDisplay();
         startLiveTracking();
-        startPeriodicLocationPusher();
+        startBackgroundKeepAlive();
       } else {
         btn.classList.remove("punched-in");
         txt.innerText = "Punch In";
         statusEl.innerText = "Punched Out";
         stopSessionTimerDisplay();
+        stopBackgroundKeepAlive();
         if (liveWatchId && navigator.geolocation) {
           navigator.geolocation.clearWatch(liveWatchId);
-        }
-        if (periodicLocationInterval) {
-          clearInterval(periodicLocationInterval);
         }
         lastKnownStationaryLat = null;
         lastKnownStationaryLng = null;
@@ -448,7 +493,6 @@
       const timeStr = formatTime12Hour(new Date());
 
       if (!punchedIn) {
-        activateBackgroundKeepAlive();
         punchInStartTime = Date.now();
         localStorage.setItem('valchem_punch_status_' + activeMR, 'ACTIVE');
         localStorage.setItem('valchem_punch_time_' + activeMR, punchInStartTime);
@@ -586,45 +630,40 @@
       }, () => {}, { enableHighAccuracy: true });
     }
 
-    // PERIODIC GPS LOCATION PUSH (HAR 1 MINUTE MEIN TESTING KE LIYE)
-    function startPeriodicLocationPusher() {
-      if (periodicLocationInterval) clearInterval(periodicLocationInterval);
-      
-      const pushLocation = () => {
-        if (!punchedIn || !navigator.geolocation || !activeMR) return;
+    // SAFE PERIODIC GPS LOCATION TRIGGER (Prevents duplicate pings)
+    function triggerPeriodicGPSUpdate() {
+      if (!punchedIn || !navigator.geolocation || !activeMR || isPinging) return;
+      isPinging = true;
 
-        navigator.geolocation.getCurrentPosition(pos => {
-          const pLat = pos.coords.latitude;
-          const pLng = pos.coords.longitude;
-          const mrKey = activeMR.replace(/\s+/g, '_');
-          const timeStr = formatTime12Hour(new Date());
+      navigator.geolocation.getCurrentPosition(pos => {
+        isPinging = false;
+        const pLat = pos.coords.latitude;
+        const pLng = pos.coords.longitude;
+        const mrKey = activeMR.replace(/\s+/g, '_');
+        const timeStr = formatTime12Hour(new Date());
 
-          db.ref("mr_live_locations/" + mrKey).update({
-            lat: pLat,
-            lng: pLng,
-            lastUpdatedTime: timeStr,
-            timestamp: Date.now()
-          });
+        db.ref("mr_live_locations/" + mrKey).update({
+          lat: pLat,
+          lng: pLng,
+          lastUpdatedTime: timeStr,
+          timestamp: Date.now()
+        });
 
-          db.ref("mr_breadcrumbs/" + mrKey).push({
-            lat: pLat,
-            lng: pLng,
-            timeStr: timeStr,
-            timestamp: Date.now()
-          });
+        db.ref("mr_breadcrumbs/" + mrKey).push({
+          lat: pLat,
+          lng: pLng,
+          timeStr: timeStr,
+          timestamp: Date.now()
+        });
 
-          sendOwnerNotification(
-            "Periodic GPS Update",
-            `${activeMR} field location synchronized at ${timeStr}`,
-            "periodic_loc",
-            "blue",
-            { lat: pLat, lng: pLng }
-          );
-        }, () => {}, { enableHighAccuracy: true, timeout: 7000 });
-      };
-
-      // Har 1 minute (60,000 ms) mein ping
-      periodicLocationInterval = setInterval(pushLocation, 60 * 1000);
+        sendOwnerNotification(
+          "Periodic GPS Update",
+          `${activeMR} field location synchronized at ${timeStr}`,
+          "periodic_loc",
+          "blue",
+          { lat: pLat, lng: pLng }
+        );
+      }, () => { isPinging = false; }, { enableHighAccuracy: true, timeout: 8000 });
     }
 
     // MASTER DATA LISTENERS
