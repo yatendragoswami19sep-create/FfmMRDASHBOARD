@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Valchem Staff</title>
+  
+  <meta name="theme-color" content="#0284c7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FIREBASE LIBRARIES -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+  <style>
+    :root { --primary: #0284c7; --emerald: #10b981; --amber: #f59e0b; --danger: #ef4444; --navy: #0f172a; --bg: #f8fafc; --card: #ffffff; --border: #cbd5e1; --text: #0f172a; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: #cbd5e1; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
+    .app-screen { width: 100%; max-width: 440px; min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    .top-navbar { background: var(--navy); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+    
+    .punch-btn { padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: white; background: #475569; transition: all 0.2s ease; }
+    .punch-btn.punched-in { background: var(--emerald) !important; box-shadow: 0 0 12px rgba(16, 185, 129, 0.45); }
+    
+    .session-info-bar { background: #e0f2fe; padding: 8px 18px; font-size: 11px; font-weight: 700; color: #0369a1; display: flex; justify-content: space-between; border-bottom: 1px solid #bae6fd; }
+    .dashboard-body { padding: 14px 16px 40px 16px; flex: 1; overflow-y: auto; }
+    .section-card { background: var(--card); border-radius: 8px; padding: 15px; margin-bottom: 14px; border: 1.5px solid var(--border); box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
+    .card-head { font-size: 14px; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    
+    .cash-split-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .cash-split-card { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1.5px solid #f59e0b; border-radius: 8px; padding: 12px; }
+    
+    .text-input, .select-input { width: 100%; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; color: var(--text); background: #f8fafc; margin-bottom: 10px; outline: none; }
+    .btn-main { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-blue { background: #0284c7; }
+    .btn-green { background: #10b981; }
+    .btn-amber { background: #d97706; }
+
+    .doctor-item { 
+      background: #ffffff; 
+      border: 1.5px solid #cbd5e1; 
+      border-radius: 6px; 
+      padding: 14px; 
+      margin-bottom: 12px; 
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .doctor-item.visit-completed { 
+      border-color: #10b981; 
+      background: #f0fdf4; 
+      border-left: 5px solid #10b981;
+    }
+
+    .popup-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(5px); z-index: 300; display: none; align-items: center; justify-content: center; padding: 16px; }
+    .popup-modal-content { background: white; border-radius: 12px; width: 100%; max-width: 410px; padding: 18px; }
+
+    /* FULLSCREEN LOGIN OVERLAY */
+    #mr-login-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0b1329 0%, #1e1b4b 100%);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 380px;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    .pin-input-field {
+      letter-spacing: 12px;
+      font-size: 24px;
+      font-weight: 800;
+      text-align: center;
+      padding: 12px;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      width: 100%;
+      margin-bottom: 14px;
+      outline: none;
+      background: #f8fafc;
+    }
+    .pin-input-field:focus {
+      border-color: #0284c7;
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MR LOGIN OVERLAY SCREEN -->
+  <div id="mr-login-screen">
+    <div class="login-card">
+      <div style="width: 56px; height: 56px; background: #e0f2fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
+        <i class="fa-solid fa-user-shield" style="font-size: 26px; color: #0284c7;"></i>
+      </div>
+      <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Valchem Staff Login</h2>
+      <p style="font-size: 12px; color: #64748b; margin-bottom: 18px;">अपना नाम चुनें और 4-अंकों का PIN दर्ज करें</p>
+
+      <div style="text-align: left; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: #475569;">SELECT STAFF NAME</div>
+      <select id="login-staff-select" class="select-input" style="padding: 12px; font-weight: 700;"></select>
+
+      <div style="text-align: left; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: #475569;">ENTER 4-DIGIT PIN</div>
+      <input type="password" id="login-pin-input" class="pin-input-field" maxlength="4" placeholder="••••" inputmode="numeric">
+
+      <div id="login-error-msg" style="font-size: 12px; font-weight: 700; color: #ef4444; margin-bottom: 12px; display: none;">
+        गलत PIN! कृपया सही पिन दर्ज करें।
+      </div>
+
+      <button class="btn-main btn-blue" onclick="verifyAndLoginMR()" style="font-size: 14px; padding: 14px;">
+        <i class="fa-solid fa-right-to-bracket"></i> Login to Field Desk
+      </button>
+
+      <div style="margin-top: 14px; font-size: 10.5px; color: #94a3b8;">
+        (Default PIN: 1234)
+      </div>
+    </div>
+  </div>
+
+  <div class="app-screen">
+    <nav class="top-navbar">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-person-walking-luggage" style="font-size:20px; color:#38bdf8;"></i>
+        <div>
+          <span id="active-mr-display" style="background:#1e293b; color:white; font-size:13px; font-weight:800; border-radius:6px; padding:4px 8px; display:inline-block;">
+            Staff Member
+          </span>
+          <div style="font-size:10px; color:#94a3b8;">Field Representative</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button id="btn-punch" class="punch-btn" onclick="toggleStaffPunch()">
+          <i class="fa-solid fa-fingerprint"></i> <span id="txt-punch">Punch In</span>
+        </button>
+        <button onclick="logoutMR()" title="Logout" style="background:#334155; border:none; color:#cbd5e1; padding:7px 9px; border-radius:8px; cursor:pointer; font-size:12px;">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+      </div>
+    </nav>
+
+    <div class="session-info-bar">
+      <span>Status: <b id="lbl-punch-status">Punched Out</b></span>
+      <span>Session: <b id="lbl-session-timer">00m 00s</b></span>
+    </div>
+
+    <div class="dashboard-body">
+      <div class="cash-split-container">
+        <div class="cash-split-card">
+          <div style="font-size:10px; font-weight:800; color:#92400e; text-transform:uppercase;">Cash Collected Today</div>
+          <div style="font-size:19px; font-weight:800; color:#b45309; margin-top:4px;" id="mr-cash-today">₹0</div>
+        </div>
+        <div class="cash-split-card" style="background: linear-gradient(135deg, #fef9c3, #fde047); border-color:#eab308;">
+          <div style="font-size:10px; font-weight:800; color:#854d0e; text-transform:uppercase;">Cash This Month</div>
+          <div style="font-size:19px; font-weight:800; color:#854d0e; margin-top:4px;" id="mr-cash-month">₹0</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="card-head"><span><i class="fa-solid fa-route" style="color:var(--primary);"></i> Belt / Route Setup</span></div>
+        <input type="text" id="new-belt-name" class="text-input" placeholder="Belt Name (उदा: Kamla Nagar Route)">
+        <select id="new-belt-day" class="select-input">
+          <option value="Monday">Monday</option><option value="Tuesday">Tuesday</option><option value="Wednesday">Wednesday</option>
+          <option value="Thursday">Thursday</option><option value="Friday">Friday</option><option value="Saturday">Saturday</option>
+        </select>
+        <button class="btn-main btn-blue" onclick="createNewBelt()">+ Create Belt</button>
+
+        <div style="margin-top:12px; background:#f0f9ff; padding:10px; border-radius:6px; border:1.5px solid var(--primary);">
+          <div style="font-size:11px; font-weight:800; color:#0369a1; margin-bottom:5px;">CURRENT ACTIVE BELT:</div>
+          <select id="active-belt-dropdown" class="select-input" style="margin-bottom:0;" onchange="loadBeltDoctors()"></select>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="card-head"><span><i class="fa-solid fa-user-doctor" style="color:var(--primary);"></i> Add Doctor with Location</span></div>
+        <input type="text" id="doc-name" class="text-input" placeholder="Doctor / Clinic Name">
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="doc-area" class="text-input" placeholder="Area / Market">
+          <input type="tel" id="doc-mobile" class="text-input" placeholder="Mobile Number">
+        </div>
+        <input type="text" id="doc-landmark" class="text-input" placeholder="Landmark">
+        
+        <button type="button" class="btn-main" onclick="captureDoctorGPS()" style="background:#0284c7; margin-bottom:6px;">
+          <i class="fa-solid fa-crosshairs"></i> 📍 Use Current GPS
+        </button>
+        <div id="gps-status-indicator" style="font-size:11px; font-weight:700; color:#0369a1; margin-bottom:10px; text-align:center;">
+          GPS Status: Location not locked yet
+        </div>
+
+        <button class="btn-main btn-green" onclick="saveDoctorToBelt()">Save Doctor in Belt</button>
+      </div>
+
+      <div class="section-card">
+        <div class="card-head"><span>Doctors in Belt</span><span id="cnt-belt-docs" style="font-size:11px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:6px;">0 Docs</span></div>
+        <div id="belt-doctors-list"></div>
+      </div>
+    </div>
+
+    <div id="pob-modal-dialog" class="popup-modal-overlay">
+      <div class="popup-modal-content" style="border: 2px solid var(--emerald);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div><b style="font-size:15px; color:#15803d;" id="selected-doc-display">Doctor Name</b><div style="font-size:11px; color:#64748b;" id="selected-doc-subline">Call Verified</div></div>
+          <button onclick="closePOBBox()" style="background:#fee2e2; border:none; width:28px; height:28px; border-radius:50%; color:red; font-weight:800; cursor:pointer;">&times;</button>
+        </div>
+        <select id="pob-item-name" class="select-input"></select>
+        <div style="display:flex; gap:8px;">
+          <input type="number" id="pob-manual-rate" class="text-input" placeholder="Rate (₹)" oninput="calculateCustomPOB()">
+          <input type="number" id="pob-qty" class="text-input" placeholder="Qty" oninput="calculateCustomPOB()">
+        </div>
+        <input type="number" id="pob-total-amount" class="text-input" placeholder="Total POB (₹)" readonly style="background:#f0fdf4; font-weight:800; color:#15803d;">
+        <input type="number" id="pob-cash-received" class="text-input" placeholder="Cash Received (₹)" style="background:#fffbeb; border-color:#f59e0b; font-weight:800; color:#b45309;">
+        <button class="btn-main btn-green" onclick="confirmPOBAndCash()">Submit POB & Cash</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBZ0MhnKjmarEpw8kqPZF00LLDCFlAewDo",
+      authDomain: "ffms-723c1.firebaseapp.com",
+      projectId: "ffms-723c1",
+      storageBucket: "ffms-723c1.firebasestorage.app",
+      messagingSenderId: "851436685685",
+      appId: "1:851436685685:web:67e2753bdf672b864beb3c",
+      databaseURL: "https://ffms-723c1-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let activeMR = "";
+    let staffDataCache = [];
+    let punchedIn = false;
+    let punchInStartTime = 0;
+    let sessionTimerInterval = null;
+
+    let capturedDocLat = null, capturedDocLng = null;
+    let selectedDoctorForPOB = null;
+    let selectedDoctorLocation = {};
+    let liveWatchId = null;
+
+    // Stoppage Monitoring Variables (100 Meter Radius)
+    let lastKnownStationaryLat = null;
+    let lastKnownStationaryLng = null;
+    let stationarySinceTimestamp = null;
+    let yellowAlertSent = false;
+    let redAlertSent = false;
+
+    // -------------------------------------------------------------
+    // BACKGROUND KEEP-ALIVE SYSTEM: WEB WORKER + SILENT AUDIO LOOP
+    // -------------------------------------------------------------
+    let backgroundWorker = null;
+    let audioContext = null;
+
+    function initBackgroundSystem() {
+      // 1. Silent Oscillator Audio Loop
+      try {
+        if (!audioContext) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            audioContext = new AudioContext();
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.frequency.value = 440;
+            gain.gain.value = 0.0001; // Silent
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.start();
+          }
+        }
+        if (audioContext && audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+      } catch (e) {
+        console.warn("Audio Context init error:", e);
+      }
+
+      // 2. Web Worker Timer (Android can't throttle background worker threads)
+      if (!backgroundWorker) {
+        const workerBlob = new Blob([`
+          let timer = null;
+          self.onmessage = function(e) {
+            if (e.data === 'start') {
+              if (timer) clearInterval(timer);
+              // Send ping every 60 seconds (1 minute)
+              timer = setInterval(() => {
+                self.postMessage('tick');
+              }, 60000);
+            } else if (e.data === 'stop') {
+              if (timer) clearInterval(timer);
+              timer = null;
+            }
+          };
+        `], { type: 'application/javascript' });
+
+        backgroundWorker = new Worker(URL.createObjectURL(workerBlob));
+        backgroundWorker.onmessage = function(e) {
+          if (e.data === 'tick' && punchedIn) {
+            triggerPeriodicGPSUpdate();
+          }
+        };
+      }
+
+      if (punchedIn && backgroundWorker) {
+        backgroundWorker.postMessage('start');
+      }
+
+      // 3. Screen WakeLock
+      if ('wakeLock' in navigator) {
+        navigator.wakeLock.request('screen').catch(() => {});
+      }
+    }
+
+    function stopBackgroundSystem() {
+      if (backgroundWorker) {
+        backgroundWorker.postMessage('stop');
+      }
+      if (audioContext && audioContext.state === 'running') {
+        audioContext.suspend().catch(() => {});
+      }
+    }
+
+    // Auto-resume background system when page becomes hidden or visible
+    document.addEventListener('visibilitychange', () => {
+      if (punchedIn) {
+        initBackgroundSystem();
+      }
+    });
+
+    function getTodayDateString() { return new Date().toISOString().split('T')[0]; }
+    function getCurrentMonthString() { return new Date().toISOString().substring(0, 7); }
+    
+    function formatTime12Hour(d) {
+      if (!d) d = new Date();
+      let h = d.getHours(), m = d.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${m < 10 ? '0' + m : m} ${ampm}`;
+    }
+
+    // --- LOGIN & SESSION STATE ENGINE ---
+    function checkExistingLoginSession() {
+      const savedUser = localStorage.getItem("valchem_active_mr");
+      if (savedUser) {
+        activeMR = savedUser;
+        document.getElementById("active-mr-display").innerText = activeMR;
+        document.getElementById("mr-login-screen").style.display = "none";
+        initPersistentPunchState();
+        updateMRCashDisplay();
+        loadBeltDoctors();
+      } else {
+        document.getElementById("mr-login-screen").style.display = "flex";
+      }
+    }
+
+    function verifyAndLoginMR() {
+      const selectEl = document.getElementById("login-staff-select");
+      const enteredPin = document.getElementById("login-pin-input").value.trim();
+      const errorEl = document.getElementById("login-error-msg");
+      const selectedName = selectEl.value;
+
+      if (!selectedName) {
+        errorEl.innerText = "कृपया स्टाफ का नाम चुनें!";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      if (!enteredPin || enteredPin.length !== 4) {
+        errorEl.innerText = "कृपया 4-अंकों का PIN दर्ज करें!";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      const foundStaff = staffDataCache.find(s => s.name === selectedName);
+      const actualPin = (foundStaff && foundStaff.pin) ? String(foundStaff.pin).trim() : "1234";
+
+      if (enteredPin === actualPin) {
+        errorEl.style.display = "none";
+        activeMR = selectedName;
+        localStorage.setItem("valchem_active_mr", activeMR);
+        document.getElementById("active-mr-display").innerText = activeMR;
+        document.getElementById("mr-login-screen").style.display = "none";
+        document.getElementById("login-pin-input").value = "";
+
+        initPersistentPunchState();
+        updateMRCashDisplay();
+        loadBeltDoctors();
+      } else {
+        errorEl.innerText = "गलत PIN! कृपया सही पिन दर्ज करें।";
+        errorEl.style.display = "block";
+      }
+    }
+
+    function logoutMR() {
+      const confirmLogout = confirm("क्या आप लॉगआउट करना चाहते हैं?");
+      if (!confirmLogout) return;
+
+      localStorage.removeItem("valchem_active_mr");
+      activeMR = "";
+      document.getElementById("login-pin-input").value = "";
+      document.getElementById("login-error-msg").style.display = "none";
+      document.getElementById("mr-login-screen").style.display = "flex";
+      stopBackgroundSystem();
+    }
+
+    // UNIVERSAL OWNER NOTIFICATION FUNCTION
+    function sendOwnerNotification(title, message, type, badgeColor = "blue", extra = {}) {
+      try {
+        const notifRef = db.ref("notifications");
+        const newKey = notifRef.push().key;
+        const now = new Date();
+
+        notifRef.child(newKey).set({
+          id: newKey,
+          title: title,
+          message: message,
+          type: type,
+          badgeColor: badgeColor,
+          mrName: activeMR || "Staff",
+          timestamp: now.getTime(),
+          dateStr: getTodayDateString(),
+          timeStr: formatTime12Hour(now),
+          extra: extra
+        });
+      } catch (err) {
+        console.error("Owner notification error:", err);
+      }
+    }
+
+    // HAVERSINE FORMULA
+    function calculateDistanceInMeters(lat1, lon1, lat2, lon2) {
+      if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
+      const R = 6371e3;
+      const toRad = x => (x * Math.PI) / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Math.round(R * c);
+    }
+
+    // PUNCH-IN & PERSISTENT SESSION TIMER LOGIC
+    function initPersistentPunchState() {
+      if (!activeMR) return;
+      const savedDate = localStorage.getItem('valchem_punch_date_' + activeMR);
+      const savedStatus = localStorage.getItem('valchem_punch_status_' + activeMR);
+      const savedTime = parseInt(localStorage.getItem('valchem_punch_time_' + activeMR), 10);
+      const today = getTodayDateString();
+
+      if (savedDate !== today) {
+        localStorage.removeItem('valchem_punch_status_' + activeMR);
+        localStorage.removeItem('valchem_punch_time_' + activeMR);
+        localStorage.removeItem('valchem_punch_date_' + activeMR);
+        applyPunchUI(false);
+        return;
+      }
+
+      if (savedStatus === 'ACTIVE' && savedTime) {
+        punchInStartTime = savedTime;
+        applyPunchUI(true);
+      } else {
+        applyPunchUI(false);
+      }
+    }
+
+    function applyPunchUI(isActive) {
+      punchedIn = isActive;
+      const btn = document.getElementById("btn-punch");
+      const txt = document.getElementById("txt-punch");
+      const statusEl = document.getElementById("lbl-punch-status");
+
+      if (isActive) {
+        btn.classList.add("punched-in");
+        txt.innerText = "Punched In";
+        statusEl.innerText = "Active in Field";
+        startSessionTimerDisplay();
+        startLiveTracking();
+        initBackgroundSystem();
+      } else {
+        btn.classList.remove("punched-in");
+        txt.innerText = "Punch In";
+        statusEl.innerText = "Punched Out";
+        stopSessionTimerDisplay();
+        stopBackgroundSystem();
+        if (liveWatchId && navigator.geolocation) {
+          navigator.geolocation.clearWatch(liveWatchId);
+        }
+        lastKnownStationaryLat = null;
+        lastKnownStationaryLng = null;
+        stationarySinceTimestamp = null;
+      }
+    }
+
+    function toggleStaffPunch() {
+      if (!activeMR) return alert("पहले लॉगिन करें!");
+      const today = getTodayDateString();
+      const timeStr = formatTime12Hour(new Date());
+
+      if (!punchedIn) {
+        punchInStartTime = Date.now();
+        localStorage.setItem('valchem_punch_status_' + activeMR, 'ACTIVE');
+        localStorage.setItem('valchem_punch_time_' + activeMR, punchInStartTime);
+        localStorage.setItem('valchem_punch_date_' + activeMR, today);
+
+        const mrKey = activeMR.replace(/\s+/g, '_');
+        db.ref("mr_attendance/" + mrKey + "/" + today).set({
+          mrName: activeMR,
+          status: "PUNCHED_IN",
+          timeStr: timeStr,
+          timestamp: punchInStartTime
+        });
+
+        sendOwnerNotification(
+          "Punch In Alert",
+          `${activeMR} ne field duty shuru ki at ${timeStr}`,
+          "punch_in",
+          "green"
+        );
+
+        applyPunchUI(true);
+      } else {
+        const confirmOut = confirm("Kya aap aaj ka session Punch Out karna chahte hain?");
+        if (!confirmOut) return;
+
+        localStorage.setItem('valchem_punch_status_' + activeMR, 'INACTIVE');
+        const mrKey = activeMR.replace(/\s+/g, '_');
+        db.ref("mr_attendance/" + mrKey + "/" + today).update({
+          status: "PUNCHED_OUT",
+          outTimeStr: timeStr,
+          outTimestamp: Date.now()
+        });
+
+        sendOwnerNotification(
+          "Punch Out Alert",
+          `${activeMR} ne field duty complete ki at ${timeStr}`,
+          "punch_out",
+          "red"
+        );
+
+        applyPunchUI(false);
+      }
+    }
+
+    function startSessionTimerDisplay() {
+      if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+      updateTimerText();
+      sessionTimerInterval = setInterval(updateTimerText, 1000);
+    }
+
+    function stopSessionTimerDisplay() {
+      if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+      document.getElementById("lbl-session-timer").innerText = "00m 00s";
+    }
+
+    function updateTimerText() {
+      if (!punchedIn || !punchInStartTime) return;
+      const elapsedSec = Math.floor((Date.now() - punchInStartTime) / 1000);
+      if (elapsedSec < 0) return;
+
+      const hrs = Math.floor(elapsedSec / 3600);
+      const mins = Math.floor((elapsedSec % 3600) / 60);
+      const secs = elapsedSec % 60;
+
+      if (hrs > 0) {
+        document.getElementById("lbl-session-timer").innerText = 
+          `${hrs}h ${mins < 10 ? '0' + mins : mins}m ${secs < 10 ? '0' + secs : secs}s`;
+      } else {
+        document.getElementById("lbl-session-timer").innerText = 
+          `${mins < 10 ? '0' + mins : mins}m ${secs < 10 ? '0' + secs : secs}s`;
+      }
+    }
+
+    // LIVE TRACKING & STOPPAGE ENGINE (Handles in-motion & idle checks)
+    function startLiveTracking() {
+      if (!navigator.geolocation || !activeMR) return;
+
+      liveWatchId = navigator.geolocation.watchPosition(pos => {
+        const curLat = pos.coords.latitude;
+        const curLng = pos.coords.longitude;
+        const now = Date.now();
+        const mrKey = activeMR.replace(/\s+/g, '_');
+
+        db.ref("mr_live_locations/" + mrKey).set({
+          mrName: activeMR,
+          lat: curLat,
+          lng: curLng,
+          lastUpdatedTime: formatTime12Hour(new Date()),
+          timestamp: now
+        });
+
+        // 100-Meter Stoppage Engine
+        if (!lastKnownStationaryLat || !lastKnownStationaryLng) {
+          lastKnownStationaryLat = curLat;
+          lastKnownStationaryLng = curLng;
+          stationarySinceTimestamp = now;
+          yellowAlertSent = false;
+          redAlertSent = false;
+        } else {
+          const moveDist = calculateDistanceInMeters(lastKnownStationaryLat, lastKnownStationaryLng, curLat, curLng);
+          if (moveDist > 100) {
+            lastKnownStationaryLat = curLat;
+            lastKnownStationaryLng = curLng;
+            stationarySinceTimestamp = now;
+            yellowAlertSent = false;
+            redAlertSent = false;
+          } else {
+            const idleMins = Math.floor((now - stationarySinceTimestamp) / (60 * 1000));
+
+            // STOPPAGE TIMERS: (1 Min Yellow, 2 Min Red for Test)
+            if (idleMins >= 1 && !yellowAlertSent) {
+              yellowAlertSent = true;
+              sendOwnerNotification(
+                "Stoppage Alert (1 Min Test)",
+                `${activeMR} pichhle 1 minute se 100m ke daayre mein ruka hua hai.`,
+                "stoppage_yellow",
+                "yellow",
+                { lat: curLat, lng: curLng, stoppageMinutes: 1 }
+              );
+            }
+
+            if (idleMins >= 2 && !redAlertSent) {
+              redAlertSent = true;
+              sendOwnerNotification(
+                "Critical Stoppage (2+ Mins Test)",
+                `${activeMR} 2 minute se adhik samay se ek hi jagah ruka hua hai!`,
+                "stoppage_red",
+                "red",
+                { lat: curLat, lng: curLng, stoppageMinutes: idleMins }
+              );
+            }
+          }
+        }
+      }, () => {}, { enableHighAccuracy: true });
+    }
+
+    // PERIODIC GPS LOCATION TRIGGER (Called safely via background web worker)
+    let isPinging = false;
+    function triggerPeriodicGPSUpdate() {
+      if (!punchedIn || !navigator.geolocation || !activeMR || isPinging) return;
+      isPinging = true;
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        isPinging = false;
+        const pLat = pos.coords.latitude;
+        const pLng = pos.coords.longitude;
+        const mrKey = activeMR.replace(/\s+/g, '_');
+        const timeStr = formatTime12Hour(new Date());
+
+        db.ref("mr_live_locations/" + mrKey).update({
+          lat: pLat,
+          lng: pLng,
+          lastUpdatedTime: timeStr,
+          timestamp: Date.now()
+        });
+
+        db.ref("mr_breadcrumbs/" + mrKey).push({
+          lat: pLat,
+          lng: pLng,
+          timeStr: timeStr,
+          timestamp: Date.now()
+        });
+
+        sendOwnerNotification(
+          "Periodic GPS Update",
+          `${activeMR} field location synchronized at ${timeStr}`,
+          "periodic_loc",
+          "blue",
+          { lat: pLat, lng: pLng }
+        );
+      }, () => { isPinging = false; }, { enableHighAccuracy: true, timeout: 8000 });
+    }
+
+    // MASTER DATA LISTENERS
+    function listenToMasterData() {
+      db.ref("staff").on("value", snapshot => {
+        const val = snapshot.val();
+        staffDataCache = val ? Object.values(val) : [{ name: "Rahul Sharma", pin: "1234" }, { name: "Amit Verma", pin: "1234" }];
+        
+        const loginSelect = document.getElementById("login-staff-select");
+        loginSelect.innerHTML = staffDataCache.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+
+        checkExistingLoginSession();
+      });
+
+      db.ref("belts").on("value", snapshot => {
+        const val = snapshot.val();
+        window.currentBelts = val ? Object.values(val) : [];
+        renderBeltDropdown();
+        loadBeltDoctors();
+      });
+
+      db.ref("products").on("value", snapshot => {
+        const val = snapshot.val();
+        window.currentProducts = val ? Object.values(val) : [
+          { id: "p1", name: "VALZYME Syrup 200ml", standardRate: 120 },
+          { id: "p2", name: "VALCEF-O 200 Tablets", standardRate: 180 }
+        ];
+      });
+
+      db.ref("transactions").on("value", snapshot => {
+        const val = snapshot.val();
+        window.allTransactions = val ? Object.values(val) : [];
+        updateMRCashDisplay();
+        loadBeltDoctors();
+      });
+    }
+
+    function captureDoctorGPS() {
+      const statusEl = document.getElementById("gps-status-indicator");
+      if (!navigator.geolocation) return alert("GPS not supported!");
+      statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Fetching live coordinates...`;
+      navigator.geolocation.getCurrentPosition(pos => {
+        capturedDocLat = pos.coords.latitude;
+        capturedDocLng = pos.coords.longitude;
+        statusEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Locked: ${capturedDocLat.toFixed(4)}, ${capturedDocLng.toFixed(4)}`;
+      }, () => { alert("Turn on GPS location!"); }, { enableHighAccuracy: true, timeout: 8000 });
+    }
+
+    function createNewBelt() {
+      const name = document.getElementById("new-belt-name").value.trim();
+      const day = document.getElementById("new-belt-day").value;
+      if (!name) return alert("Enter belt name!");
+      const id = "belt_" + Date.now();
+      db.ref("belts/" + id).set({ id, name, day, doctors: [] });
+      document.getElementById("new-belt-name").value = "";
+    }
+
+    function renderBeltDropdown() {
+      const belts = window.currentBelts || [];
+      const dd = document.getElementById("active-belt-dropdown");
+      const currentSelected = dd.value;
+      dd.innerHTML = belts.map(b => `<option value="${b.id}">${b.name} (${b.day})</option>`).join('');
+      if (currentSelected) dd.value = currentSelected;
+    }
+
+    function saveDoctorToBelt() {
+      const beltId = document.getElementById("active-belt-dropdown").value;
+      const name = document.getElementById("doc-name").value.trim();
+      const area = document.getElementById("doc-area").value.trim();
+      const mobile = document.getElementById("doc-mobile").value.trim();
+      const landmark = document.getElementById("doc-landmark").value.trim();
+      if (!beltId || !name || !area) return alert("Enter doctor name and area!");
+
+      const belts = window.currentBelts || [];
+      const b = belts.find(x => x.id === beltId);
+      if (!b) return;
+      if (!b.doctors) b.doctors = [];
+
+      const docLat = capturedDocLat || 27.2152;
+      const docLng = capturedDocLng || 78.0090;
+
+      b.doctors.push({
+        id: "doc_" + Date.now(),
+        name, area, mobile, landmark,
+        lat: docLat,
+        lng: docLng,
+        callCompletedTime: null,
+        lastCallDate: null
+      });
+
+      db.ref("belts/" + beltId).set(b);
+
+      sendOwnerNotification(
+        "New Doctor Added",
+        `${activeMR} ne Dr. ${name} (${area}) ko belt mein add kiya`,
+        "doctor_add",
+        "blue",
+        { doctor: name, area: area, lat: docLat, lng: docLng }
+      );
+
+      alert(`${name} saved!`);
+      document.getElementById("doc-name").value = "";
+      document.getElementById("doc-area").value = "";
+      document.getElementById("doc-mobile").value = "";
+      document.getElementById("doc-landmark").value = "";
+      capturedDocLat = null; capturedDocLng = null;
+      document.getElementById("gps-status-indicator").innerText = "GPS Status: Location not locked yet";
+    }
+
+    function updateDoctorLocationLive(beltId, docIdx, docName) {
+      if (!navigator.geolocation) return alert("GPS not available!");
+      
+      const confirmReset = confirm(`Kya aap Dr. ${docName} ki location ko apni CURRENT GPS location par set karna chahte hain?`);
+      if (!confirmReset) return;
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const newLat = pos.coords.latitude;
+        const newLng = pos.coords.longitude;
+
+        const belts = window.currentBelts || [];
+        const b = belts.find(x => x.id === beltId);
+        if (!b || !b.doctors || !b.doctors[docIdx]) return;
+
+        b.doctors[docIdx].lat = newLat;
+        b.doctors[docIdx].lng = newLng;
+
+        db.ref("belts/" + beltId).set(b).then(() => {
+          sendOwnerNotification(
+            "Doctor Location Updated",
+            `${activeMR} ne Dr. ${docName} ki location successfully update ki`,
+            "doc_location_reset",
+            "amber",
+            { doctor: docName, newLat: newLat, newLng: newLng }
+          );
+
+          alert(`Dr. ${docName} ki location lock kar di gayi hai (${newLat.toFixed(4)}, ${newLng.toFixed(4)})`);
+          loadBeltDoctors();
+        });
+      }, () => {
+        alert("GPS location nahi mil saki. Kripya phone ka Location (GPS) check karein.");
+      }, { enableHighAccuracy: true, timeout: 8000 });
+    }
+
+    function loadBeltDoctors() {
+      const dd = document.getElementById("active-belt-dropdown");
+      if (!dd) return;
+      const beltId = dd.value;
+      const belts = window.currentBelts || [];
+      const b = belts.find(x => x.id === beltId);
+      const container = document.getElementById("belt-doctors-list");
+      const today = getTodayDateString();
+
+      if (!b || !b.doctors || b.doctors.length === 0) {
+        container.innerHTML = `<p style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No doctors in this belt.</p>`;
+        document.getElementById("cnt-belt-docs").innerText = "0 Docs";
+        return;
+      }
+      document.getElementById("cnt-belt-docs").innerText = `${b.doctors.length} Docs`;
+
+      container.innerHTML = b.doctors.map((d, i) => {
+        const isTodayDone = (d.lastCallDate === today && d.callCompletedTime);
+
+        return `
+          <div class="doctor-item ${isTodayDone ? 'visit-completed' : ''}">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <div style="font-size:14px; font-weight:800; color:#0f172a;">${d.name}</div>
+                <div style="font-size:11px; color:#64748b; margin-top:2px;">
+                  <i class="fa-solid fa-location-dot" style="color:#0284c7;"></i> ${d.area} ${d.landmark ? '(' + d.landmark + ')' : ''}
+                </div>
+              </div>
+              <span style="font-size:11px; font-weight:800; color:${isTodayDone ? '#15803d' : '#64748b'}; background:${isTodayDone ? '#dcfce7' : '#f1f5f9'}; padding:3px 8px; border-radius:4px; border:1px solid ${isTodayDone ? '#86efac' : '#cbd5e1'};">
+                ${isTodayDone ? '<i class="fa-solid fa-check"></i> ' + d.callCompletedTime : 'Pending Call'}
+              </span>
+            </div>
+
+            <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+              <div style="display:flex; gap:8px;">
+                ${!isTodayDone ? `
+                  <button class="btn-main btn-blue" style="flex:1;" id="btn-call-${i}" onclick="verifyDoctorCallWithGeotag(${i}, '${d.name}',${d.lat}, ${d.lng}, '${d.area}')">
+                    <i class="fa-solid fa-clipboard-check"></i> Check-In Call
+                  </button>
+                ` : `
+                  <button class="btn-main" style="flex:1; background:#e2e8f0; color:#64748b; cursor:not-allowed;" disabled title="Aaj ki call verify ho chuki hai">
+                    <i class="fa-solid fa-lock"></i> Call Locked
+                  </button>
+                `}
+
+                <button class="btn-main btn-green" style="flex:1;" onclick="openPOBBox('${d.name}', ${d.lat}, ${d.lng}, '${d.area}', '${d.callCompletedTime || ''}', ${d.lastCallTimestamp || 0})">
+                  <i class="fa-solid fa-cart-shopping"></i> Book POB / Cash
+                </button>
+              </div>
+
+              <button class="btn-main btn-amber" style="padding:7px; font-size:11px;" onclick="updateDoctorLocationLive('${beltId}', ${i}, '${d.name}')">
+                <i class="fa-solid fa-crosshairs"></i> 📍 Set / Update Doctor Location Here
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function verifyDoctorCallWithGeotag(idx, name, docLat, docLng, area) {
+      if (!punchedIn) return alert("Pehle upar se Punch-In karein!");
+
+      const callBtn = document.getElementById("btn-call-" + idx);
+      if (callBtn) {
+        callBtn.disabled = true;
+        callBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Checking GPS...`;
+      }
+
+      if (!navigator.geolocation) {
+        saveCallTransaction(idx, name, docLat, docLng, area, docLat, docLng, 0, true);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const mrCurrentLat = pos.coords.latitude;
+          const mrCurrentLng = pos.coords.longitude;
+          const distMeters = calculateDistanceInMeters(docLat, docLng, mrCurrentLat, mrCurrentLng);
+          const isVerified = distMeters <= 100;
+
+          saveCallTransaction(idx, name, docLat, docLng, area, mrCurrentLat, mrCurrentLng, distMeters, isVerified);
+        },
+        err => {
+          saveCallTransaction(idx, name, docLat, docLng, area, docLat, docLng, 0, false);
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+
+    function saveCallTransaction(idx, name, docLat, docLng, area, actualLat, actualLng, distanceMeters, isVerified) {
+      const now = new Date();
+      const timeStr = formatTime12Hour(now);
+      const callTimestamp = now.getTime();
+      const today = getTodayDateString();
+
+      const beltId = document.getElementById("active-belt-dropdown").value;
+      const belts = window.currentBelts || [];
+      const b = belts.find(x => x.id === beltId);
+
+      b.doctors[idx].callCompletedTime = timeStr;
+      b.doctors[idx].lastCallDate = today;
+      b.doctors[idx].lastCallTimestamp = callTimestamp;
+      db.ref("belts/" + beltId).set(b);
+
+      const txId = "tx_" + Date.now();
+      db.ref("transactions/" + txId).set({
+        mrName: activeMR,
+        doctor: name,
+        area: area,
+        lat: actualLat || docLat || 27.2152,
+        lng: actualLng || docLng || 78.0090,
+        docSavedLat: docLat || 27.2152,
+        docSavedLng: docLng || 78.0090,
+        distanceMeters: distanceMeters,
+        isVerified: isVerified,
+        verifiedStatus: isVerified ? "VERIFIED" : "DEVIATED",
+        callTime: timeStr,
+        dateStr: today,
+        timestamp: callTimestamp,
+        item: "Doctor Detailing Call",
+        pobAmount: 0,
+        cashReceived: 0
+      });
+
+      sendOwnerNotification(
+        "Doctor Call Check-In",
+        `${activeMR} ne Dr. ${name} (${area}) ki visit complete ki (${isVerified ? 'Verified: ' + distanceMeters + 'm' : 'Deviated: ' + distanceMeters + 'm'})`,
+        "call",
+        isVerified ? "green" : "amber",
+        { doctor: name, area: area, distance: distanceMeters }
+      );
+
+      if (isVerified) {
+        alert(`Doctor Call Verified at ${timeStr} (Near Clinic: ${distanceMeters}m)`);
+      } else {
+        alert(`Call Recorded at ${timeStr}\nNotice: Distance is ${distanceMeters > 1000 ? (distanceMeters/1000).toFixed(1) + ' km' : distanceMeters + 'm'} away from clinic.`);
+      }
+    }
+
+    function openPOBBox(name, lat, lng, area, completedTimeStr, callTimestamp) {
+      if (!punchedIn) return alert("Pehle Punch-In karein!");
+
+      selectedDoctorForPOB = name;
+      selectedDoctorLocation = {
+        lat: lat || 27.2152,
+        lng: lng || 78.0090,
+        area: area || 'Field Clinic',
+        callCompletedTime: completedTimeStr,
+        lastCallTimestamp: callTimestamp || 0
+      };
+
+      document.getElementById("selected-doc-display").innerText = name;
+      document.getElementById("selected-doc-subline").innerText = area || 'Field Clinic';
+
+      const products = window.currentProducts || [];
+      const sel = document.getElementById("pob-item-name");
+      sel.innerHTML = products.map(p => `<option value="${p.name}" data-rate="${p.standardRate}">${p.name} (Ref: ₹${p.standardRate})</option>`).join('');
+      
+      document.getElementById("pob-manual-rate").value = products[0] ? products[0].standardRate : "";
+      document.getElementById("pob-qty").value = "";
+      document.getElementById("pob-total-amount").value = "";
+      document.getElementById("pob-cash-received").value = "";
+
+      document.getElementById("pob-modal-dialog").style.display = "flex";
+    }
+
+    function closePOBBox() { 
+      document.getElementById("pob-modal-dialog").style.display = "none"; 
+    }
+
+    function calculateCustomPOB() {
+      const r = parseFloat(document.getElementById("pob-manual-rate").value) || 0;
+      const q = parseFloat(document.getElementById("pob-qty").value) || 0;
+      document.getElementById("pob-total-amount").value = (r * q) || "";
+    }
+
+    function confirmPOBAndCash() {
+      const item = document.getElementById("pob-item-name").value;
+      const pobAmount = parseFloat(document.getElementById("pob-total-amount").value) || 0;
+      const cashReceived = parseFloat(document.getElementById("pob-cash-received").value) || 0;
+      
+      if (!pobAmount && !cashReceived) return alert("Kripya POB Amount ya Cash daalein!");
+
+      const now = new Date();
+      const currentTimestamp = now.getTime();
+      const currentFreshTime = formatTime12Hour(now);
+      const today = getTodayDateString();
+
+      let assignedCallTime = currentFreshTime;
+      let assignedTimestamp = currentTimestamp;
+
+      if (selectedDoctorLocation.lastCallTimestamp && selectedDoctorLocation.callCompletedTime) {
+        const timeDiffMinutes = (currentTimestamp - selectedDoctorLocation.lastCallTimestamp) / (1000 * 60);
+        if (timeDiffMinutes <= 15) {
+          assignedCallTime = selectedDoctorLocation.callCompletedTime;
+          assignedTimestamp = selectedDoctorLocation.lastCallTimestamp;
+        }
+      }
+
+      const txId = "tx_" + Date.now();
+      db.ref("transactions/" + txId).set({
+        mrName: activeMR,
+        doctor: selectedDoctorForPOB,
+        area: selectedDoctorLocation.area,
+        lat: selectedDoctorLocation.lat,
+        lng: selectedDoctorLocation.lng,
+        callTime: assignedCallTime,
+        dateStr: today,
+        timestamp: assignedTimestamp,
+        item: item,
+        pobAmount: pobAmount,
+        cashReceived: cashReceived
+      });
+
+      if (pobAmount > 0) {
+        sendOwnerNotification(
+          "POB Booked",
+          `${activeMR} ne Dr. ${selectedDoctorForPOB} se ₹${pobAmount} ka POB liya (${item})`,
+          "pob",
+          "green",
+          { doctor: selectedDoctorForPOB, pob: pobAmount, product: item }
+        );
+      }
+
+      if (cashReceived > 0) {
+        sendOwnerNotification(
+          "Cash Collected",
+          `${activeMR} ne Dr. ${selectedDoctorForPOB} se ₹${cashReceived} cash collect kiya`,
+          "cash",
+          "amber",
+          { doctor: selectedDoctorForPOB, cash: cashReceived }
+        );
+      }
+
+      alert("POB / Cash Entry Saved Successfully!");
+      closePOBBox();
+    }
+
+    function updateMRCashDisplay() {
+      const all = window.allTransactions || [];
+      const myTx = all.filter(x => x.mrName === activeMR);
+      const today = getTodayDateString();
+      const currentMonth = getCurrentMonthString();
+
+      const todayTotal = myTx.filter(x => x.dateStr === today).reduce((s, x) => s + (parseFloat(x.cashReceived) || 0), 0);
+      const monthTotal = myTx.filter(x => x.dateStr && x.dateStr.startsWith(currentMonth)).reduce((s, x) => s + (parseFloat(x.cashReceived) || 0), 0);
+
+      document.getElementById("mr-cash-today").innerText = "₹" + todayTotal.toLocaleString('en-IN');
+      document.getElementById("mr-cash-month").innerText = "₹" + monthTotal.toLocaleString('en-IN');
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      listenToMasterData();
+    });
+  </script>
+</body>
+</html>
