@@ -1,3 +1,4 @@
+
 name: Build Cordova APK
 
 on:
@@ -31,7 +32,7 @@ jobs:
           cp ../index.html www/index.html
           cordova platform add android@10.1.2
           cordova plugin add cordova-plugin-geolocation
-          cordova plugin add @katzer/cordova-plugin-background-mode
+          cordova plugin add https://github.com/katzer/cordova-plugin-background-mode.git
           cordova build android --debug
 
       - name: Save APK File
