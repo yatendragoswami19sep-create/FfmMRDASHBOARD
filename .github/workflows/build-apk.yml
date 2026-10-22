@@ -50,7 +50,7 @@ jobs:
 
           npx cap add android
           
-          # Manifest Permissions for Foreground Service
+          # Manifest Permissions for Foreground Location Service
           MANIFEST_FILE="android/app/src/main/AndroidManifest.xml"
           PERMS='<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />'
           sed -i "/<manifest/a \    $PERMS" $MANIFEST_FILE
@@ -58,12 +58,13 @@ jobs:
           SERVICE_DEF='<service android:name=".ValchemTrackingService" android:foregroundServiceType="location" android:exported="false" />'
           sed -i "/<\/application>/i \        $SERVICE_DEF" $MANIFEST_FILE
 
-          # Inject Google Play Services Location Dependency
+          # Google Play Services Location Dependency
           APP_GRADLE="android/app/build.gradle"
           sed -i '/dependencies {/a \    implementation "com.google.android.gms:play-services-location:21.0.1"' $APP_GRADLE
 
-          # Create Native Background Tracking Service (Direct Firebase HTTP REST)
           SRC_DIR="android/app/src/main/java/com/valchem/ffmr"
+
+          # 1. Native Background Service
           cat << 'EOF' > $SRC_DIR/ValchemTrackingService.java
           package com.valchem.ffmr;
 
@@ -199,7 +200,7 @@ jobs:
           }
           EOF
 
-          # Create Native Plugin Bridge to Start/Stop Service from JavaScript
+          # 2. Native Plugin Bridge
           cat << 'EOF' > $SRC_DIR/ValchemNativeBridgePlugin.java
           package com.valchem.ffmr;
 
@@ -234,10 +235,21 @@ jobs:
           }
           EOF
 
-          # Register Plugin in MainActivity
-          MAIN_ACTIVITY="$SRC_DIR/MainActivity.java"
-          sed -i '/import com.getcapacitor.BridgeActivity;/a import android.os.Bundle;' $MAIN_ACTIVITY
-          sed -i '/public class MainActivity extends BridgeActivity {/a \    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(ValchemNativeBridgePlugin.class);\n        super.onCreate(savedInstanceState);\n    }' $MAIN_ACTIVITY
+          # 3. Clean MainActivity Replacement (Prevents Java Syntax Errors)
+          cat << 'EOF' > $SRC_DIR/MainActivity.java
+          package com.valchem.ffmr;
+
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  registerPlugin(ValchemNativeBridgePlugin.class);
+                  super.onCreate(savedInstanceState);
+              }
+          }
+          EOF
 
           npx cap sync
           cd android
