@@ -99,11 +99,6 @@
 </head>
 <body>
 
-  <!-- SILENT AUDIO HARDWARE WAKE ELEMENT -->
-  <audio id="bg-keep-alive-audio" loop playsinline preload="auto" style="display:none;">
-    <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" type="audio/wav">
-  </audio>
-
   <!-- MR LOGIN OVERLAY SCREEN -->
   <div id="mr-login-screen">
     <div class="login-card">
@@ -257,197 +252,23 @@
     let capturedDocLat = null, capturedDocLng = null;
     let selectedDoctorForPOB = null;
     let selectedDoctorLocation = {};
-    let liveWatchId = null;
-    let nativeBgWatcherId = null;
-
-    // Stoppage Monitoring Variables (100 Meter Radius)
-    let lastKnownStationaryLat = null;
-    let lastKnownStationaryLng = null;
-    let stationarySinceTimestamp = null;
-    let yellowAlertSent = false;
-    let redAlertSent = false;
-    let lastReportedMinute = -1;
+    let foregroundLiveWatchId = null;
 
     // -------------------------------------------------------------
-    // NATIVE PERSISTENT BACKGROUND ENGINE (Capacitor + Audio fallback)
+    // PURE NATIVE BACKGROUND SERVICE HOOKS (No Audio / No JS Freeze)
     // -------------------------------------------------------------
-    const bgAudio = document.getElementById("bg-keep-alive-audio");
-    let bgIntervalId = null;
-
-    async function startBackgroundKeepAlive() {
-      // 1. Native Persistent Foreground Service Watcher
-      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BackgroundGeolocation) {
-        try {
-          const bgPlugin = window.Capacitor.Plugins.BackgroundGeolocation;
-          nativeBgWatcherId = await bgPlugin.addWatcher(
-            {
-              backgroundTitle: "Valchem Field Desk",
-              backgroundMessage: `${activeMR || "MR"} is Active on Field Duty`,
-              requestPermissions: true,
-              stale: false,
-              distanceFilter: 0
-            },
-            function (location, error) {
-              if (error) {
-                console.warn("Native BG Watcher error:", error);
-                return;
-              }
-              if (location && punchedIn) {
-                processIncomingGPS(location.latitude, location.longitude, Date.now());
-              }
-            }
-          );
-        } catch (e) {
-          console.warn("Could not register native BackgroundGeolocation:", e);
-        }
-      }
-
-      // 2. Continuous Background Interval Loop
-      if (bgIntervalId) clearInterval(bgIntervalId);
-      bgIntervalId = setInterval(() => {
-        if (punchedIn) {
-          triggerAutoBackgroundHeartbeat(Date.now());
-        }
-      }, 25000);
-
-      // 3. Audio & WakeLock Engine
-      if (bgAudio) {
-        bgAudio.volume = 0.01;
-        bgAudio.play().catch(() => {});
-        bgAudio.ontimeupdate = () => {
-          if (!punchedIn) return;
-          const now = Date.now();
-          if (now - lastPulseTimestamp >= 30000) {
-            lastPulseTimestamp = now;
-            triggerAutoBackgroundHeartbeat(now);
-          }
-        };
-      }
-
-      if ('wakeLock' in navigator) {
-        navigator.wakeLock.request('screen').catch(() => {});
+    function startNativeTracking() {
+      // Direct call to Android Native Foreground Service
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.ValchemNativeBridge) {
+        window.Capacitor.Plugins.ValchemNativeBridge.startDutyTracking({ mrName: activeMR });
       }
     }
 
-    async function stopBackgroundKeepAlive() {
-      if (bgIntervalId) {
-        clearInterval(bgIntervalId);
-        bgIntervalId = null;
+    function stopNativeTracking() {
+      // Stop Android Native Foreground Service
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.ValchemNativeBridge) {
+        window.Capacitor.Plugins.ValchemNativeBridge.stopDutyTracking();
       }
-
-      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BackgroundGeolocation && nativeBgWatcherId) {
-        try {
-          await window.Capacitor.Plugins.BackgroundGeolocation.removeWatcher({ id: nativeBgWatcherId });
-          nativeBgWatcherId = null;
-        } catch (e) {}
-      }
-
-      if (bgAudio) {
-        bgAudio.pause();
-        bgAudio.ontimeupdate = null;
-      }
-    }
-
-    // Process incoming GPS coordinate regardless of source
-    function processIncomingGPS(curLat, curLng, now) {
-      if (!punchedIn || !activeMR) return;
-      const mrKey = activeMR.replace(/\s+/g, '_');
-      const timeStr = formatTime12Hour(new Date(now));
-
-      // Update live real-time location
-      db.ref("mr_live_locations/" + mrKey).update({
-        mrName: activeMR,
-        lat: curLat,
-        lng: curLng,
-        lastUpdatedTime: timeStr,
-        timestamp: now
-      });
-
-      // 1-minute periodic heartbeat & breadcrumb
-      const currentMinute = Math.floor(now / 60000);
-      if (currentMinute !== lastReportedMinute) {
-        lastReportedMinute = currentMinute;
-
-        db.ref("mr_breadcrumbs/" + mrKey).push({
-          lat: curLat,
-          lng: curLng,
-          timeStr: timeStr,
-          timestamp: now
-        });
-
-        sendOwnerNotification(
-          "Periodic GPS Update",
-          `${activeMR} field location synchronized at ${timeStr}`,
-          "periodic_loc",
-          "blue",
-          { lat: curLat, lng: curLng }
-        );
-      }
-
-      // 100m Stoppage Detection
-      if (!lastKnownStationaryLat || !lastKnownStationaryLng) {
-        lastKnownStationaryLat = curLat;
-        lastKnownStationaryLng = curLng;
-        stationarySinceTimestamp = now;
-        yellowAlertSent = false;
-        redAlertSent = false;
-      } else {
-        const moveDist = calculateDistanceInMeters(lastKnownStationaryLat, lastKnownStationaryLng, curLat, curLng);
-
-        if (moveDist > 100) {
-          lastKnownStationaryLat = curLat;
-          lastKnownStationaryLng = curLng;
-          stationarySinceTimestamp = now;
-          yellowAlertSent = false;
-          redAlertSent = false;
-        } else {
-          const idleMins = Math.floor((now - stationarySinceTimestamp) / (60 * 1000));
-
-          if (idleMins >= 1 && !yellowAlertSent) {
-            yellowAlertSent = true;
-            sendOwnerNotification(
-              "Stoppage Alert (1 Min Test)",
-              `${activeMR} pichhle 1 minute se 100m ke daayre mein ruka hua hai.`,
-              "stoppage_yellow",
-              "yellow",
-              { lat: curLat, lng: curLng, stoppageMinutes: 1 }
-            );
-          }
-
-          if (idleMins >= 2 && !redAlertSent) {
-            redAlertSent = true;
-            sendOwnerNotification(
-              "Critical Stoppage (2+ Mins Test)",
-              `${activeMR} 2 minute se adhik samay se ek hi jagah ruka hua hai!`,
-              "stoppage_red",
-              "red",
-              { lat: curLat, lng: curLng, stoppageMinutes: idleMins }
-            );
-          }
-        }
-      }
-    }
-
-    let lastPulseTimestamp = 0;
-    let isPinging = false;
-
-    function triggerAutoBackgroundHeartbeat(now) {
-      if (!punchedIn || !navigator.geolocation || !activeMR || isPinging) return;
-      isPinging = true;
-
-      const geoOptions = {
-        enableHighAccuracy: true,
-        maximumAge: 15000,
-        timeout: 10000
-      };
-
-      navigator.geolocation.getCurrentPosition(pos => {
-        isPinging = false;
-        processIncomingGPS(pos.coords.latitude, pos.coords.longitude, now);
-      }, err => {
-        isPinging = false;
-        console.warn("Background GPS Pulse Error:", err);
-      }, geoOptions);
     }
 
     function getTodayDateString() { return new Date().toISOString().split('T')[0]; }
@@ -522,7 +343,7 @@
       document.getElementById("login-pin-input").value = "";
       document.getElementById("login-error-msg").style.display = "none";
       document.getElementById("mr-login-screen").style.display = "flex";
-      stopBackgroundKeepAlive();
+      stopNativeTracking();
     }
 
     function sendOwnerNotification(title, message, type, badgeColor = "blue", extra = {}) {
@@ -595,20 +416,18 @@
         txt.innerText = "Punched In";
         statusEl.innerText = "Active in Field";
         startSessionTimerDisplay();
-        startLiveTracking();
-        startBackgroundKeepAlive();
+        startForegroundFastSync();
+        startNativeTracking();
       } else {
         btn.classList.remove("punched-in");
         txt.innerText = "Punch In";
         statusEl.innerText = "Punched Out";
         stopSessionTimerDisplay();
-        stopBackgroundKeepAlive();
-        if (liveWatchId && navigator.geolocation) {
-          navigator.geolocation.clearWatch(liveWatchId);
+        stopNativeTracking();
+        if (foregroundLiveWatchId && navigator.geolocation) {
+          navigator.geolocation.clearWatch(foregroundLiveWatchId);
+          foregroundLiveWatchId = null;
         }
-        lastKnownStationaryLat = null;
-        lastKnownStationaryLng = null;
-        stationarySinceTimestamp = null;
       }
     }
 
@@ -691,11 +510,23 @@
       }
     }
 
-    function startLiveTracking() {
+    // Foreground sync when MR is actively using the screen
+    function startForegroundFastSync() {
       if (!navigator.geolocation || !activeMR) return;
 
-      liveWatchId = navigator.geolocation.watchPosition(pos => {
-        processIncomingGPS(pos.coords.latitude, pos.coords.longitude, Date.now());
+      foregroundLiveWatchId = navigator.geolocation.watchPosition(pos => {
+        const curLat = pos.coords.latitude;
+        const curLng = pos.coords.longitude;
+        const mrKey = activeMR.replace(/\s+/g, '_');
+        const timeStr = formatTime12Hour(new Date());
+
+        db.ref("mr_live_locations/" + mrKey).update({
+          mrName: activeMR,
+          lat: curLat,
+          lng: curLng,
+          lastUpdatedTime: timeStr,
+          timestamp: Date.now()
+        });
       }, () => {}, { enableHighAccuracy: true });
     }
 
