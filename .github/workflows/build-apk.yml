@@ -21,19 +21,22 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Build Android Project with Location Permissions
+      - name: Build Android Project with Persistent Service
         run: |
           mkdir app-build && cd app-build
           npm init -y
-          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5 @capacitor/geolocation@5
+          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5 @capacitor-community/background-geolocation
           npx cap init "Valchem MR" "com.valchem.ffmr" --web-dir www
           mkdir www
           cp ../index.html www/index.html
+
+          sed -i 's/<head>/<head><script src="capacitor.js"><\/script>/g' www/index.html || true
+
           npx cap add android
           
-          # Inject Location Permissions directly into AndroidManifest.xml
+          # Native permissions for Foreground Notification & GPS
           MANIFEST_FILE="android/app/src/main/AndroidManifest.xml"
-          PERMS='<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-feature android:name="android.hardware.location.gps" />'
+          PERMS='<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="true" />'
           sed -i "/<manifest/a \    $PERMS" $MANIFEST_FILE
 
           npx cap sync
