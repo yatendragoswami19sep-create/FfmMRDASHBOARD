@@ -21,23 +21,223 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Build Android Project with Persistent Service
+      - name: Build Android Project with Native Tracking Service
         run: |
           mkdir app-build && cd app-build
           npm init -y
-          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5 @capacitor-community/background-geolocation
+          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5
           npx cap init "Valchem MR" "com.valchem.ffmr" --web-dir www
           mkdir www
           cp ../index.html www/index.html
 
           sed -i 's/<head>/<head><script src="capacitor.js"><\/script>/g' www/index.html || true
 
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.valchem.ffmr",
+            "appName": "Valchem MR",
+            "webDir": "www",
+            "server": {
+              "androidScheme": "https"
+            },
+            "android": {
+              "allowMixedContent": true,
+              "captureInput": true,
+              "webContentsDebuggingEnabled": true
+            }
+          }
+          EOF
+
           npx cap add android
           
-          # Native permissions for Foreground Notification & GPS
+          # Manifest Permissions for Foreground Service
           MANIFEST_FILE="android/app/src/main/AndroidManifest.xml"
-          PERMS='<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="true" />'
+          PERMS='<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.WAKE_LOCK" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />'
           sed -i "/<manifest/a \    $PERMS" $MANIFEST_FILE
+
+          SERVICE_DEF='<service android:name=".ValchemTrackingService" android:foregroundServiceType="location" android:exported="false" />'
+          sed -i "/<\/application>/i \        $SERVICE_DEF" $MANIFEST_FILE
+
+          # Inject Google Play Services Location Dependency
+          APP_GRADLE="android/app/build.gradle"
+          sed -i '/dependencies {/a \    implementation "com.google.android.gms:play-services-location:21.0.1"' $APP_GRADLE
+
+          # Create Native Background Tracking Service (Direct Firebase HTTP REST)
+          SRC_DIR="android/app/src/main/java/com/valchem/ffmr"
+          cat << 'EOF' > $SRC_DIR/ValchemTrackingService.java
+          package com.valchem.ffmr;
+
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.Service;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.location.Location;
+          import android.os.Build;
+          import android.os.IBinder;
+          import android.os.Looper;
+          import android.os.PowerManager;
+          import androidx.core.app.NotificationCompat;
+          import com.google.android.gms.location.FusedLocationProviderClient;
+          import com.google.android.gms.location.LocationCallback;
+          import com.google.android.gms.location.LocationRequest;
+          import com.google.android.gms.location.LocationResult;
+          import com.google.android.gms.location.LocationServices;
+          import com.google.android.gms.location.Priority;
+          import java.io.OutputStream;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+          import java.text.SimpleDateFormat;
+          import java.util.Date;
+          import java.util.Locale;
+
+          public class ValchemTrackingService extends Service {
+              private static final String CHANNEL_ID = "valchem_tracking_channel";
+              private FusedLocationProviderClient fusedLocationClient;
+              private LocationCallback locationCallback;
+              private PowerManager.WakeLock wakeLock;
+              private String mrName = "Staff";
+
+              @Override
+              public void onCreate() {
+                  super.onCreate();
+                  createNotificationChannel();
+                  PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                  wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Valchem:ServiceWakeLock");
+                  wakeLock.acquire();
+
+                  fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+                  locationCallback = new LocationCallback() {
+                      @Override
+                      public void onLocationResult(LocationResult locationResult) {
+                          if (locationResult == null) return;
+                          for (Location loc : locationResult.getLocations()) {
+                              sendLocationToFirebase(loc.getLatitude(), loc.getLongitude());
+                          }
+                      }
+                  };
+              }
+
+              @Override
+              public int onStartCommand(Intent intent, int flags, int startId) {
+                  if (intent != null && intent.hasExtra("MR_NAME")) {
+                      mrName = intent.getStringExtra("MR_NAME");
+                  }
+
+                  Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                          .setContentTitle("Valchem Field Desk")
+                          .setContentText(mrName + " is Active on Field Duty")
+                          .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                          .setOngoing(true)
+                          .setPriority(NotificationCompat.PRIORITY_MAX)
+                          .build();
+
+                  startForeground(101, notification);
+
+                  LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 30000)
+                          .setMinUpdateIntervalMillis(20000)
+                          .setMinUpdateDistanceMeters(0)
+                          .build();
+
+                  try {
+                      fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+                  } catch (SecurityException ignored) {}
+
+                  return START_STICKY;
+              }
+
+              private void sendLocationToFirebase(double lat, double lng) {
+                  new Thread(() -> {
+                      try {
+                          String mrKey = mrName.replaceAll("\\s+", "_");
+                          String firebaseUrl = "https://ffms-723c1-default-rtdb.asia-southeast1.firebasedatabase.app/mr_live_locations/" + mrKey + ".json";
+                          
+                          SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a", Locale.US);
+                          String timeStr = sdf.format(new Date());
+                          long now = System.currentTimeMillis();
+
+                          String json = "{\"mrName\":\"" + mrName + "\",\"lat\":" + lat + ",\"lng\":" + lng + ",\"lastUpdatedTime\":\"" + timeStr + "\",\"timestamp\":" + now + "}";
+
+                          URL url = new URL(firebaseUrl);
+                          HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                          conn.setRequestMethod("POST");
+                          conn.setRequestProperty("X-HTTP-Method-Override", "PATCH");
+                          conn.setRequestProperty("Content-Type", "application/json");
+                          conn.setDoOutput(true);
+
+                          try (OutputStream os = conn.getOutputStream()) {
+                              os.write(json.getBytes("UTF-8"));
+                          }
+                          conn.getResponseCode();
+                          conn.disconnect();
+                      } catch (Exception ignored) {}
+                  }).start();
+              }
+
+              private void createNotificationChannel() {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Valchem Duty Tracking", NotificationManager.IMPORTANCE_HIGH);
+                      NotificationManager manager = getSystemService(NotificationManager.class);
+                      if (manager != null) manager.createNotificationChannel(channel);
+                  }
+              }
+
+              @Override
+              public void onDestroy() {
+                  super.onDestroy();
+                  if (fusedLocationClient != null && locationCallback != null) {
+                      fusedLocationClient.removeLocationUpdates(locationCallback);
+                  }
+                  if (wakeLock != null && wakeLock.isHeld()) {
+                      wakeLock.release();
+                  }
+              }
+
+              @Override
+              public IBinder onBind(Intent intent) { return null; }
+          }
+          EOF
+
+          # Create Native Plugin Bridge to Start/Stop Service from JavaScript
+          cat << 'EOF' > $SRC_DIR/ValchemNativeBridgePlugin.java
+          package com.valchem.ffmr;
+
+          import android.content.Intent;
+          import android.os.Build;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+
+          @CapacitorPlugin(name = "ValchemNativeBridge")
+          public class ValchemNativeBridgePlugin extends Plugin {
+              @PluginMethod
+              public void startDutyTracking(PluginCall call) {
+                  String name = call.getString("mrName", "Staff");
+                  Intent intent = new Intent(getContext(), ValchemTrackingService.class);
+                  intent.putExtra("MR_NAME", name);
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      getContext().startForegroundService(intent);
+                  } else {
+                      getContext().startService(intent);
+                  }
+                  call.resolve();
+              }
+
+              @PluginMethod
+              public void stopDutyTracking(PluginCall call) {
+                  Intent intent = new Intent(getContext(), ValchemTrackingService.class);
+                  getContext().stopService(intent);
+                  call.resolve();
+              }
+          }
+          EOF
+
+          # Register Plugin in MainActivity
+          MAIN_ACTIVITY="$SRC_DIR/MainActivity.java"
+          sed -i '/import com.getcapacitor.BridgeActivity;/a import android.os.Bundle;' $MAIN_ACTIVITY
+          sed -i '/public class MainActivity extends BridgeActivity {/a \    @Override\n    public void onCreate(Bundle savedInstanceState) {\n        registerPlugin(ValchemNativeBridgePlugin.class);\n        super.onCreate(savedInstanceState);\n    }' $MAIN_ACTIVITY
 
           npx cap sync
           cd android
