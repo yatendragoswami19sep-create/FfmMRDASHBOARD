@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Build Android Project with Native Tracking Service
+      - name: Build Android Project with Complete Native Log Sync
         run: |
           mkdir app-build && cd app-build
           npm init -y
@@ -64,7 +64,7 @@ jobs:
 
           SRC_DIR="android/app/src/main/java/com/valchem/ffmr"
 
-          # 1. Native Background Service
+          # 1. Native Background Service with Notifications & Breadcrumbs
           cat << 'EOF' > $SRC_DIR/ValchemTrackingService.java
           package com.valchem.ffmr;
 
@@ -99,6 +99,7 @@ jobs:
               private LocationCallback locationCallback;
               private PowerManager.WakeLock wakeLock;
               private String mrName = "Staff";
+              private long lastReportedMinute = -1;
 
               @Override
               public void onCreate() {
@@ -114,7 +115,7 @@ jobs:
                       public void onLocationResult(LocationResult locationResult) {
                           if (locationResult == null) return;
                           for (Location loc : locationResult.getLocations()) {
-                              sendLocationToFirebase(loc.getLatitude(), loc.getLongitude());
+                              sendLocationData(loc.getLatitude(), loc.getLongitude());
                           }
                       }
                   };
@@ -137,7 +138,7 @@ jobs:
                   startForeground(101, notification);
 
                   LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 30000)
-                          .setMinUpdateIntervalMillis(20000)
+                          .setMinUpdateIntervalMillis(15000)
                           .setMinUpdateDistanceMeters(0)
                           .build();
 
@@ -148,32 +149,58 @@ jobs:
                   return START_STICKY;
               }
 
-              private void sendLocationToFirebase(double lat, double lng) {
+              private void sendLocationData(double lat, double lng) {
                   new Thread(() -> {
                       try {
-                          String mrKey = mrName.replaceAll("\\s+", "_");
-                          String firebaseUrl = "https://ffms-723c1-default-rtdb.asia-southeast1.firebasedatabase.app/mr_live_locations/" + mrKey + ".json";
-                          
-                          SimpleDateFormat sdf = new SimpleDateFormat("hh:mm a", Locale.US);
-                          String timeStr = sdf.format(new Date());
                           long now = System.currentTimeMillis();
+                          SimpleDateFormat timeFmt = new SimpleDateFormat("hh:mm a", Locale.US);
+                          SimpleDateFormat dateFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                          String timeStr = timeFmt.format(new Date(now));
+                          String dateStr = dateFmt.format(new Date(now));
+                          String mrKey = mrName.replaceAll("\\s+", "_");
 
-                          String json = "{\"mrName\":\"" + mrName + "\",\"lat\":" + lat + ",\"lng\":" + lng + ",\"lastUpdatedTime\":\"" + timeStr + "\",\"timestamp\":" + now + "}";
+                          // 1. Live Realtime Location
+                          String liveUrl = "https://ffms-723c1-default-rtdb.asia-southeast1.firebasedatabase.app/mr_live_locations/" + mrKey + ".json";
+                          String liveJson = "{\"mrName\":\"" + mrName + "\",\"lat\":" + lat + ",\"lng\":" + lng + ",\"lastUpdatedTime\":\"" + timeStr + "\",\"timestamp\":" + now + "}";
+                          sendHttp(liveUrl, liveJson, "PATCH");
 
-                          URL url = new URL(firebaseUrl);
-                          HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                          conn.setRequestMethod("POST");
-                          conn.setRequestProperty("X-HTTP-Method-Override", "PATCH");
-                          conn.setRequestProperty("Content-Type", "application/json");
-                          conn.setDoOutput(true);
+                          // 2. 1-Minute Periodic GPS Update Alert for Notifications Log
+                          long currentMinute = now / 60000;
+                          if (currentMinute != lastReportedMinute) {
+                              lastReportedMinute = currentMinute;
 
-                          try (OutputStream os = conn.getOutputStream()) {
-                              os.write(json.getBytes("UTF-8"));
+                              // Notifications Log Push
+                              String notifUrl = "https://ffms-723c1-default-rtdb.asia-southeast1.firebasedatabase.app/notifications.json";
+                              String notifJson = "{\"title\":\"Periodic GPS Update\",\"message\":\"" + mrName + " field location synchronized at " + timeStr + "\",\"type\":\"periodic_loc\",\"badgeColor\":\"blue\",\"mrName\":\"" + mrName + "\",\"timestamp\":" + now + ",\"dateStr\":\"" + dateStr + "\",\"timeStr\":\"" + timeStr + "\",\"extra\":{\"lat\":" + lat + ",\"lng\":" + lng + "}}";
+                              sendHttp(notifUrl, notifJson, "POST");
+
+                              // Breadcrumb Push
+                              String crumbUrl = "https://ffms-723c1-default-rtdb.asia-southeast1.firebasedatabase.app/mr_breadcrumbs/" + mrKey + ".json";
+                              String crumbJson = "{\"lat\":" + lat + ",\"lng\":" + lng + ",\"timeStr\":\"" + timeStr + "\",\"timestamp\":" + now + "}";
+                              sendHttp(crumbUrl, crumbJson, "POST");
                           }
-                          conn.getResponseCode();
-                          conn.disconnect();
                       } catch (Exception ignored) {}
                   }).start();
+              }
+
+              private void sendHttp(String urlStr, String jsonBody, String method) {
+                  try {
+                      URL url = new URL(urlStr);
+                      HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                      if ("PATCH".equalsIgnoreCase(method)) {
+                          conn.setRequestMethod("POST");
+                          conn.setRequestProperty("X-HTTP-Method-Override", "PATCH");
+                      } else {
+                          conn.setRequestMethod(method);
+                      }
+                      conn.setRequestProperty("Content-Type", "application/json");
+                      conn.setDoOutput(true);
+                      try (OutputStream os = conn.getOutputStream()) {
+                          os.write(jsonBody.getBytes("UTF-8"));
+                      }
+                      conn.getResponseCode();
+                      conn.disconnect();
+                  } catch (Exception ignored) {}
               }
 
               private void createNotificationChannel() {
@@ -200,7 +227,7 @@ jobs:
           }
           EOF
 
-          # 2. Native Plugin Bridge
+          # 2. Native Bridge Plugin
           cat << 'EOF' > $SRC_DIR/ValchemNativeBridgePlugin.java
           package com.valchem.ffmr;
 
@@ -235,7 +262,7 @@ jobs:
           }
           EOF
 
-          # 3. Clean MainActivity Replacement (Prevents Java Syntax Errors)
+          # 3. Clean MainActivity Setup
           cat << 'EOF' > $SRC_DIR/MainActivity.java
           package com.valchem.ffmr;
 
