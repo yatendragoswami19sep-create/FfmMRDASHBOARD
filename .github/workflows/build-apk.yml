@@ -1,3 +1,4 @@
+
 name: Build Android APK
 
 on:
@@ -10,32 +11,32 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Java 21
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '17'
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
       - name: Build Android Project with Capacitor
         run: |
           mkdir app-build && cd app-build
           npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5
           npx cap init "Valchem MR" "com.valchem.ffmr" --web-dir www
           mkdir www
           cp ../index.html www/index.html
           npx cap add android
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug -Dorg.gradle.jvmargs="-Xmx2048m"
 
       - name: Upload APK File
         uses: actions/upload-artifact@v4
         with:
           name: Valchem-MR-APK
-          path: app-build/android/app/build/outputs/apk/debug/app-debug.apk
+          path: app-build/android/app/build/outputs/apk/debug/*.apk
