@@ -1,4 +1,3 @@
-
 name: Build Android APK
 
 on:
@@ -22,15 +21,22 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Build Android Project with Capacitor
+      - name: Build Android Project with Location Permissions
         run: |
           mkdir app-build && cd app-build
           npm init -y
-          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5
+          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5 @capacitor/geolocation@5
           npx cap init "Valchem MR" "com.valchem.ffmr" --web-dir www
           mkdir www
           cp ../index.html www/index.html
           npx cap add android
+          
+          # Inject Location Permissions directly into AndroidManifest.xml
+          MANIFEST_FILE="android/app/src/main/AndroidManifest.xml"
+          PERMS='<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />\n    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <uses-feature android:name="android.hardware.location.gps" />'
+          sed -i "/<manifest/a \    $PERMS" $MANIFEST_FILE
+
+          npx cap sync
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug -Dorg.gradle.jvmargs="-Xmx2048m"
