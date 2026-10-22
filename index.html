@@ -267,44 +267,40 @@
     let redAlertSent = false;
 
     // -------------------------------------------------------------
-    // BACKGROUND KEEP-ALIVE SYSTEM: REAL AUDIO LOOP + HARDWARE KEEP-ALIVE
+    // BACKGROUND KEEP-ALIVE: HARDWARE AUDIO ontimeupdate ENGINE
     // -------------------------------------------------------------
     const bgAudio = document.getElementById("bg-keep-alive-audio");
-    let bgInterval = null;
-    let lastGpsTriggerTime = 0;
+    let lastPulseTimestamp = 0;
     let isPinging = false;
 
     function startBackgroundKeepAlive() {
       if (bgAudio) {
         bgAudio.volume = 0.01;
-        bgAudio.play().then(() => {
-          console.log("Hardware media active in background");
-        }).catch(err => console.log("Audio play error:", err));
+        bgAudio.play().catch(e => console.log("Audio play request:", e));
+
+        // HARDWARE EVENT: Bajta hua audio har second trigger hota hai
+        // Screen lock hone par bhi Android ise kill nahi karta
+        bgAudio.ontimeupdate = () => {
+          if (!punchedIn) return;
+
+          const now = Date.now();
+          // Har 30 second me automatic background pulse aur stoppage check
+          if (now - lastPulseTimestamp >= 30000) {
+            lastPulseTimestamp = now;
+            triggerAutoBackgroundHeartbeat(now);
+          }
+        };
       }
 
       if ('wakeLock' in navigator) {
         navigator.wakeLock.request('screen').catch(() => {});
       }
-
-      // Safe single loop - checks every 10 seconds, fires ping after minimum 55 seconds
-      if (bgInterval) clearInterval(bgInterval);
-      bgInterval = setInterval(() => {
-        if (!punchedIn) return;
-        const now = Date.now();
-        if (now - lastGpsTriggerTime >= 55000) {
-          lastGpsTriggerTime = now;
-          triggerPeriodicGPSUpdate();
-        }
-      }, 10000);
     }
 
     function stopBackgroundKeepAlive() {
       if (bgAudio) {
         bgAudio.pause();
-      }
-      if (bgInterval) {
-        clearInterval(bgInterval);
-        bgInterval = null;
+        bgAudio.ontimeupdate = null;
       }
     }
 
@@ -321,6 +317,107 @@
         if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(() => {});
       }
     });
+
+    // AUTOMATIC BACKGROUND PULSE & STOPPAGE DETECTOR
+    let lastReportedMinute = -1;
+
+    function triggerAutoBackgroundHeartbeat(now) {
+      if (!punchedIn || !navigator.geolocation || !activeMR || isPinging) return;
+      isPinging = true;
+
+      const geoOptions = {
+        enableHighAccuracy: true,
+        maximumAge: 20000,
+        timeout: 10000
+      };
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        isPinging = false;
+        const curLat = pos.coords.latitude;
+        const curLng = pos.coords.longitude;
+        const mrKey = activeMR.replace(/\s+/g, '_');
+        const timeStr = formatTime12Hour(new Date());
+
+        // 1. Live location Firebase me update karein
+        db.ref("mr_live_locations/" + mrKey).update({
+          lat: curLat,
+          lng: curLng,
+          lastUpdatedTime: timeStr,
+          timestamp: now
+        });
+
+        // 2. Har 60 second (1 minute) par ek baar Owner App ko Periodic GPS Alert
+        const currentMinute = Math.floor(now / 60000);
+        if (currentMinute !== lastReportedMinute) {
+          lastReportedMinute = currentMinute;
+
+          db.ref("mr_breadcrumbs/" + mrKey).push({
+            lat: curLat,
+            lng: curLng,
+            timeStr: timeStr,
+            timestamp: now
+          });
+
+          sendOwnerNotification(
+            "Periodic GPS Update",
+            `${activeMR} field location synchronized at ${timeStr}`,
+            "periodic_loc",
+            "blue",
+            { lat: curLat, lng: curLng }
+          );
+        }
+
+        // 3. 100-Meter Automatic Stoppage Engine
+        if (!lastKnownStationaryLat || !lastKnownStationaryLng) {
+          lastKnownStationaryLat = curLat;
+          lastKnownStationaryLng = curLng;
+          stationarySinceTimestamp = now;
+          yellowAlertSent = false;
+          redAlertSent = false;
+        } else {
+          const moveDist = calculateDistanceInMeters(lastKnownStationaryLat, lastKnownStationaryLng, curLat, curLng);
+
+          if (moveDist > 100) {
+            // MR chal pada - reset
+            lastKnownStationaryLat = curLat;
+            lastKnownStationaryLng = curLng;
+            stationarySinceTimestamp = now;
+            yellowAlertSent = false;
+            redAlertSent = false;
+          } else {
+            // 100m ke daayre mein ruka hua hai
+            const idleMins = Math.floor((now - stationarySinceTimestamp) / (60 * 1000));
+
+            // TEST: 1 MINUTE STOPPAGE (YELLOW ALERT)
+            if (idleMins >= 1 && !yellowAlertSent) {
+              yellowAlertSent = true;
+              sendOwnerNotification(
+                "Stoppage Alert (1 Min Test)",
+                `${activeMR} pichhle 1 minute se 100m ke daayre mein ruka hua hai.`,
+                "stoppage_yellow",
+                "yellow",
+                { lat: curLat, lng: curLng, stoppageMinutes: 1 }
+              );
+            }
+
+            // TEST: 2 MINUTE STOPPAGE (RED ALERT)
+            if (idleMins >= 2 && !redAlertSent) {
+              redAlertSent = true;
+              sendOwnerNotification(
+                "Critical Stoppage (2+ Mins Test)",
+                `${activeMR} 2 minute se adhik samay se ek hi jagah ruka hua hai!`,
+                "stoppage_red",
+                "red",
+                { lat: curLat, lng: curLng, stoppageMinutes: idleMins }
+              );
+            }
+          }
+        }
+      }, err => {
+        isPinging = false;
+        console.warn("Background GPS Pulse Error:", err);
+      }, geoOptions);
+    }
 
     function getTodayDateString() { return new Date().toISOString().split('T')[0]; }
     function getCurrentMonthString() { return new Date().toISOString().substring(0, 7); }
@@ -566,104 +663,23 @@
       }
     }
 
-    // LIVE TRACKING & 1-MIN / 2-MIN TEST STOPPAGE ENGINE
+    // FOREGROUND WATCH POSITION (Jab app screen on ho)
     function startLiveTracking() {
       if (!navigator.geolocation || !activeMR) return;
 
       liveWatchId = navigator.geolocation.watchPosition(pos => {
         const curLat = pos.coords.latitude;
         const curLng = pos.coords.longitude;
-        const now = Date.now();
         const mrKey = activeMR.replace(/\s+/g, '_');
 
-        db.ref("mr_live_locations/" + mrKey).set({
+        db.ref("mr_live_locations/" + mrKey).update({
           mrName: activeMR,
           lat: curLat,
           lng: curLng,
           lastUpdatedTime: formatTime12Hour(new Date()),
-          timestamp: now
+          timestamp: Date.now()
         });
-
-        // 100-Meter Stoppage Engine
-        if (!lastKnownStationaryLat || !lastKnownStationaryLng) {
-          lastKnownStationaryLat = curLat;
-          lastKnownStationaryLng = curLng;
-          stationarySinceTimestamp = now;
-          yellowAlertSent = false;
-          redAlertSent = false;
-        } else {
-          const moveDist = calculateDistanceInMeters(lastKnownStationaryLat, lastKnownStationaryLng, curLat, curLng);
-          if (moveDist > 100) {
-            lastKnownStationaryLat = curLat;
-            lastKnownStationaryLng = curLng;
-            stationarySinceTimestamp = now;
-            yellowAlertSent = false;
-            redAlertSent = false;
-          } else {
-            const idleMins = Math.floor((now - stationarySinceTimestamp) / (60 * 1000));
-
-            // TEST 1 MIN STOPPAGE (YELLOW ALERT)
-            if (idleMins >= 1 && !yellowAlertSent) {
-              yellowAlertSent = true;
-              sendOwnerNotification(
-                "Stoppage Alert (1 Min Test)",
-                `${activeMR} pichhle 1 minute se 100m ke daayre mein ruka hua hai.`,
-                "stoppage_yellow",
-                "yellow",
-                { lat: curLat, lng: curLng, stoppageMinutes: 1 }
-              );
-            }
-
-            // TEST 2 MIN STOPPAGE (RED ALERT)
-            if (idleMins >= 2 && !redAlertSent) {
-              redAlertSent = true;
-              sendOwnerNotification(
-                "Critical Stoppage (2+ Mins Test)",
-                `${activeMR} 2 minute se adhik samay se ek hi jagah ruka hua hai!`,
-                "stoppage_red",
-                "red",
-                { lat: curLat, lng: curLng, stoppageMinutes: idleMins }
-              );
-            }
-          }
-        }
       }, () => {}, { enableHighAccuracy: true });
-    }
-
-    // SAFE PERIODIC GPS LOCATION TRIGGER (Prevents duplicate pings)
-    function triggerPeriodicGPSUpdate() {
-      if (!punchedIn || !navigator.geolocation || !activeMR || isPinging) return;
-      isPinging = true;
-
-      navigator.geolocation.getCurrentPosition(pos => {
-        isPinging = false;
-        const pLat = pos.coords.latitude;
-        const pLng = pos.coords.longitude;
-        const mrKey = activeMR.replace(/\s+/g, '_');
-        const timeStr = formatTime12Hour(new Date());
-
-        db.ref("mr_live_locations/" + mrKey).update({
-          lat: pLat,
-          lng: pLng,
-          lastUpdatedTime: timeStr,
-          timestamp: Date.now()
-        });
-
-        db.ref("mr_breadcrumbs/" + mrKey).push({
-          lat: pLat,
-          lng: pLng,
-          timeStr: timeStr,
-          timestamp: Date.now()
-        });
-
-        sendOwnerNotification(
-          "Periodic GPS Update",
-          `${activeMR} field location synchronized at ${timeStr}`,
-          "periodic_loc",
-          "blue",
-          { lat: pLat, lng: pLng }
-        );
-      }, () => { isPinging = false; }, { enableHighAccuracy: true, timeout: 8000 });
     }
 
     // MASTER DATA LISTENERS
