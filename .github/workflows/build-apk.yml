@@ -21,9 +21,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Build Android Project with Capacitor
         run: |
           mkdir app-build && cd app-build
