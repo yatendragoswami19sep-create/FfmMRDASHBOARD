@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Valchem Staff</title>
+  <title>Valchem Staff - Field Desk</title>
   
   <meta name="theme-color" content="#0284c7">
   <meta name="mobile-web-app-capable" content="yes">
@@ -15,53 +15,136 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
   <style>
-    :root { --primary: #0284c7; --emerald: #10b981; --amber: #f59e0b; --danger: #ef4444; --navy: #0f172a; --bg: #f8fafc; --card: #ffffff; --border: #cbd5e1; --text: #0f172a; }
+    :root { 
+      --primary: #0284c7; 
+      --primary-dark: #0369a1;
+      --emerald: #10b981; 
+      --emerald-dark: #047857;
+      --amber: #f59e0b; 
+      --danger: #ef4444; 
+      --navy: #0f172a; 
+      --bg: #f1f5f9; 
+      --card: #ffffff; 
+      --border-dark: #334155; 
+      --text: #0f172a; 
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: #cbd5e1; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
     .app-screen { width: 100%; max-width: 440px; min-height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-    .top-navbar { background: var(--navy); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
     
-    .punch-btn { padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: white; background: #475569; transition: all 0.2s ease; }
+    /* HEADER NAVBAR */
+    .top-navbar { background: var(--navy); color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 2px solid #1e293b; }
+    .punch-btn { padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; color: white; background: #475569; transition: all 0.2s ease; }
     .punch-btn.punched-in { background: var(--emerald) !important; box-shadow: 0 0 12px rgba(16, 185, 129, 0.45); }
     
-    .session-info-bar { background: #e0f2fe; padding: 8px 18px; font-size: 11px; font-weight: 700; color: #0369a1; display: flex; justify-content: space-between; border-bottom: 1px solid #bae6fd; }
-    .dashboard-body { padding: 14px 16px 40px 16px; flex: 1; overflow-y: auto; }
-    .section-card { background: var(--card); border-radius: 8px; padding: 15px; margin-bottom: 14px; border: 1.5px solid var(--border); box-shadow: 0 2px 6px rgba(0,0,0,0.03); }
-    .card-head { font-size: 14px; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .nav-action-btn { background: #1e293b; border: 1.5px solid #334155; color: #f8fafc; padding: 7px 11px; border-radius: 8px; cursor: pointer; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
     
-    .cash-split-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-    .cash-split-card { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1.5px solid #f59e0b; border-radius: 8px; padding: 12px; }
+    .session-info-bar { background: #e0f2fe; padding: 8px 16px; font-size: 11px; font-weight: 700; color: var(--primary-dark); display: flex; justify-content: space-between; border-bottom: 1.5px solid #bae6fd; }
+    .dashboard-body { padding: 14px 14px 40px 14px; flex: 1; overflow-y: auto; }
     
-    .text-input, .select-input { width: 100%; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 13px; color: var(--text); background: #f8fafc; margin-bottom: 10px; outline: none; }
-    .btn-main { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .btn-blue { background: #0284c7; }
-    .btn-green { background: #10b981; }
-    .btn-amber { background: #d97706; }
+    /* CARDS COMMON */
+    .section-card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 14px; border: 2px solid var(--border-dark); box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06); }
+    .card-head { font-size: 13.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+    
+    /* INPUTS & BUTTONS */
+    .text-input, .select-input { width: 100%; padding: 11px 12px; border: 2px solid #94a3b8; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text); background: #ffffff; margin-bottom: 10px; outline: none; }
+    .text-input:focus, .select-input:focus { border-color: var(--primary); }
+    .btn-main { width: 100%; padding: 11px 12px; border: 2px solid transparent; border-radius: 8px; font-size: 12.5px; font-weight: 800; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; transition: transform 0.1s ease; }
+    .btn-main:active { transform: scale(0.98); }
+    .btn-blue { background: #0284c7; border-color: #0369a1; }
+    .btn-green { background: #10b981; border-color: #047857; }
+    .btn-amber { background: #d97706; border-color: #b45309; }
 
+    /* BELT HIGHLIGHT BAR */
+    .active-belt-banner {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 2.5px solid #2563eb;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+    }
+
+    /* DOCTOR CARD STYLES */
     .doctor-item { 
       background: #ffffff; 
-      border: 1.5px solid #cbd5e1; 
-      border-radius: 6px; 
-      padding: 14px; 
+      border: 2.5px solid #475569; 
+      border-radius: 12px; 
+      padding: 13px 14px; 
       margin-bottom: 12px; 
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.05);
+      position: relative;
+    }
+    .doctor-item.pending-card {
+      background: #ffffff;
+      border-color: #2563eb;
+      border-left: 6px solid #2563eb;
     }
     .doctor-item.visit-completed { 
-      border-color: #10b981; 
+      border-color: #059669; 
       background: #f0fdf4; 
-      border-left: 5px solid #10b981;
+      border-left: 6px solid #059669;
+      opacity: 0.9;
     }
 
-    .popup-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(5px); z-index: 300; display: none; align-items: center; justify-content: center; padding: 16px; }
-    .popup-modal-content { background: white; border-radius: 12px; width: 100%; max-width: 410px; padding: 18px; }
+    .seq-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #1e293b;
+      color: white;
+      font-size: 11px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 6px;
+      flex-shrink: 0;
+    }
 
-    /* FULLSCREEN LOGIN OVERLAY */
+    .doctor-name-text {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-pin-loc {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: #fef3c7;
+      border: 1.5px solid #f59e0b;
+      color: #b45309;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+
+    /* POPUP & DROPDOWN OVERLAYS */
+    .popup-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 300; display: none; align-items: center; justify-content: center; padding: 16px; }
+    .popup-modal-content { background: white; border-radius: 14px; width: 100%; max-width: 410px; padding: 18px; border: 2.5px solid var(--border-dark); }
+
+    /* SUMMARY ACCORDION / SLIDE PANEL */
+    #collections-dropdown-panel {
+      display: none;
+      background: #0f172a;
+      border-bottom: 2px solid #334155;
+      padding: 14px 16px;
+      color: white;
+    }
+
+    /* LOGIN SCREEN */
     #mr-login-screen {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0; width: 100%; height: 100%;
       background: linear-gradient(135deg, #0b1329 0%, #1e1b4b 100%);
       z-index: 9999;
       display: flex;
@@ -77,6 +160,7 @@
       padding: 24px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.3);
       text-align: center;
+      border: 2px solid #cbd5e1;
     }
     .pin-input-field {
       letter-spacing: 12px;
@@ -84,16 +168,12 @@
       font-weight: 800;
       text-align: center;
       padding: 12px;
-      border: 2px solid #cbd5e1;
+      border: 2px solid #94a3b8;
       border-radius: 10px;
       width: 100%;
       margin-bottom: 14px;
       outline: none;
       background: #f8fafc;
-    }
-    .pin-input-field:focus {
-      border-color: #0284c7;
-      background: #ffffff;
     }
   </style>
 </head>
@@ -102,11 +182,11 @@
   <!-- MR LOGIN OVERLAY SCREEN -->
   <div id="mr-login-screen">
     <div class="login-card">
-      <div style="width: 56px; height: 56px; background: #e0f2fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
+      <div style="width: 56px; height: 56px; background: #e0f2fe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; border: 2px solid #0284c7;">
         <i class="fa-solid fa-user-shield" style="font-size: 26px; color: #0284c7;"></i>
       </div>
       <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">Valchem Staff Login</h2>
-      <p style="font-size: 12px; color: #64748b; margin-bottom: 18px;">अपना नाम चुनें और 4-अंकों का PIN दर्ज करें</p>
+      <p style="font-size: 12px; color: #64748b; margin-bottom: 18px;">Select staff name and enter 4-digit PIN</p>
 
       <div style="text-align: left; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: #475569;">SELECT STAFF NAME</div>
       <select id="login-staff-select" class="select-input" style="padding: 12px; font-weight: 700;"></select>
@@ -115,116 +195,145 @@
       <input type="password" id="login-pin-input" class="pin-input-field" maxlength="4" placeholder="••••" inputmode="numeric">
 
       <div id="login-error-msg" style="font-size: 12px; font-weight: 700; color: #ef4444; margin-bottom: 12px; display: none;">
-        गलत PIN! कृपया सही पिन दर्ज करें।
+        Incorrect PIN! Please try again.
       </div>
 
-      <button class="btn-main btn-blue" onclick="verifyAndLoginMR()" style="font-size: 14px; padding: 14px;">
+      <button class="btn-main btn-blue" onclick="verifyAndLoginMR()" style="font-size: 14px; padding: 13px;">
         <i class="fa-solid fa-right-to-bracket"></i> Login to Field Desk
       </button>
 
-      <div style="margin-top: 14px; font-size: 10.5px; color: #94a3b8;">
+      <div style="margin-top: 14px; font-size: 11px; color: #94a3b8;">
         (Default PIN: 1234)
       </div>
     </div>
   </div>
 
   <div class="app-screen">
+    <!-- NAVBAR -->
     <nav class="top-navbar">
       <div style="display:flex; align-items:center; gap:8px;">
-        <i class="fa-solid fa-person-walking-luggage" style="font-size:20px; color:#38bdf8;"></i>
+        <i class="fa-solid fa-circle-user" style="font-size:22px; color:#38bdf8;"></i>
         <div>
-          <span id="active-mr-display" style="background:#1e293b; color:white; font-size:13px; font-weight:800; border-radius:6px; padding:4px 8px; display:inline-block;">
+          <span id="active-mr-display" style="background:#1e293b; color:white; font-size:13px; font-weight:800; border-radius:6px; padding:3px 8px; display:inline-block; border: 1px solid #334155;">
             Staff Member
           </span>
-          <div style="font-size:10px; color:#94a3b8;">Field Representative</div>
+          <div style="font-size:9.5px; color:#94a3b8; font-weight:600;">Field Representative</div>
         </div>
       </div>
+      
       <div style="display:flex; align-items:center; gap:6px;">
+        <!-- DROPDOWN BUTTON FOR CASH & POB -->
+        <button class="nav-action-btn" onclick="toggleCollectionsDropdown()" title="Collections Summary">
+          <i class="fa-solid fa-wallet" style="color:#fbbf24;"></i> Summary <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i>
+        </button>
         <button id="btn-punch" class="punch-btn" onclick="toggleStaffPunch()">
           <i class="fa-solid fa-fingerprint"></i> <span id="txt-punch">Punch In</span>
         </button>
-        <button onclick="logoutMR()" title="Logout" style="background:#334155; border:none; color:#cbd5e1; padding:7px 9px; border-radius:8px; cursor:pointer; font-size:12px;">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        <button onclick="logoutMR()" title="Logout" style="background:#334155; border:1px solid #475569; color:#cbd5e1; padding:7px 9px; border-radius:8px; cursor:pointer; font-size:12px;">
+          <i class="fa-solid fa-power-off"></i>
         </button>
       </div>
     </nav>
 
+    <!-- HIDDEN SLIDE DOWN SUMMARY PANEL -->
+    <div id="collections-dropdown-panel">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="background: #1e293b; border: 1.5px solid #f59e0b; border-radius: 8px; padding: 10px;">
+          <div style="font-size: 10px; font-weight: 800; color: #fbbf24; text-transform: uppercase;">Today's Cash</div>
+          <div style="font-size: 18px; font-weight: 800; color: #ffffff; margin-top: 3px;" id="mr-cash-today">₹0</div>
+        </div>
+        <div style="background: #1e293b; border: 1.5px solid #10b981; border-radius: 8px; padding: 10px;">
+          <div style="font-size: 10px; font-weight: 800; color: #34d399; text-transform: uppercase;">This Month Cash</div>
+          <div style="font-size: 18px; font-weight: 800; color: #ffffff; margin-top: 3px;" id="mr-cash-month">₹0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSION BAR -->
     <div class="session-info-bar">
       <span>Status: <b id="lbl-punch-status">Punched Out</b></span>
       <span>Session: <b id="lbl-session-timer">00m 00s</b></span>
     </div>
 
     <div class="dashboard-body">
-      <!-- 2-SECTION CASH BOX -->
-      <div class="cash-split-container">
-        <div class="cash-split-card">
-          <div style="font-size:10px; font-weight:800; color:#92400e; text-transform:uppercase;">Cash Collected Today</div>
-          <div style="font-size:19px; font-weight:800; color:#b45309; margin-top:4px;" id="mr-cash-today">₹0</div>
+      
+      <!-- BELT SETUP CARD (ATTRACTIVE & MINIMAL) -->
+      <div class="section-card" style="border-color:#3b82f6; background:#ffffff;">
+        <div class="card-head" style="color:#1d4ed8;">
+          <span><i class="fa-solid fa-route"></i> Create Route / Belt</span>
         </div>
-        <div class="cash-split-card" style="background: linear-gradient(135deg, #fef9c3, #fde047); border-color:#eab308;">
-          <div style="font-size:10px; font-weight:800; color:#854d0e; text-transform:uppercase;">Cash This Month</div>
-          <div style="font-size:19px; font-weight:800; color:#854d0e; margin-top:4px;" id="mr-cash-month">₹0</div>
-        </div>
-      </div>
-
-      <!-- BELT SETUP -->
-      <div class="section-card">
-        <div class="card-head"><span><i class="fa-solid fa-route" style="color:var(--primary);"></i> Belt / Route Setup</span></div>
-        <input type="text" id="new-belt-name" class="text-input" placeholder="Belt Name (उदा: Kamla Nagar Route)">
+        <input type="text" id="new-belt-name" class="text-input" placeholder="Belt Name (e.g. Sanjay Place, Kamla Nagar)">
         <select id="new-belt-day" class="select-input">
           <option value="Monday">Monday</option><option value="Tuesday">Tuesday</option><option value="Wednesday">Wednesday</option>
           <option value="Thursday">Thursday</option><option value="Friday">Friday</option><option value="Saturday">Saturday</option>
         </select>
-        <button class="btn-main btn-blue" onclick="createNewBelt()">+ Create Belt</button>
-
-        <div style="margin-top:12px; background:#f0f9ff; padding:10px; border-radius:6px; border:1.5px solid var(--primary);">
-          <div style="font-size:11px; font-weight:800; color:#0369a1; margin-bottom:5px;">CURRENT ACTIVE BELT:</div>
-          <select id="active-belt-dropdown" class="select-input" style="margin-bottom:0;" onchange="loadBeltDoctors()"></select>
-        </div>
+        <button class="btn-main btn-blue" onclick="createNewBelt()">
+          <i class="fa-solid fa-plus"></i> Save New Belt
+        </button>
       </div>
 
       <!-- ADD DOCTOR WITH GPS -->
-      <div class="section-card">
-        <div class="card-head"><span><i class="fa-solid fa-user-doctor" style="color:var(--primary);"></i> Add Doctor with Location</span></div>
+      <div class="section-card" style="border-color:#059669;">
+        <div class="card-head" style="color:#047857;">
+          <span><i class="fa-solid fa-user-doctor"></i> Add Doctor to Route</span>
+        </div>
         <input type="text" id="doc-name" class="text-input" placeholder="Doctor / Clinic Name">
         <div style="display:flex; gap:8px;">
-          <input type="text" id="doc-area" class="text-input" placeholder="Area / Market">
+          <input type="text" id="doc-area" class="text-input" placeholder="Market / Area">
           <input type="tel" id="doc-mobile" class="text-input" placeholder="Mobile Number">
         </div>
         <input type="text" id="doc-landmark" class="text-input" placeholder="Landmark">
         
-        <button type="button" class="btn-main" onclick="captureDoctorGPS()" style="background:#0284c7; margin-bottom:6px;">
-          <i class="fa-solid fa-crosshairs"></i> 📍 Use Current GPS
+        <button type="button" class="btn-main" onclick="captureDoctorGPS()" style="background:#0284c7; border-color:#0369a1; margin-bottom:6px;">
+          <i class="fa-solid fa-crosshairs"></i> Capture Current GPS Location
         </button>
         <div id="gps-status-indicator" style="font-size:11px; font-weight:700; color:#0369a1; margin-bottom:10px; text-align:center;">
-          GPS Status: Location not locked yet
+          GPS Status: Location not locked
         </div>
 
-        <button class="btn-main btn-green" onclick="saveDoctorToBelt()">Save Doctor in Belt</button>
+        <button class="btn-main btn-green" onclick="saveDoctorToBelt()">
+          <i class="fa-solid fa-check"></i> Register Doctor
+        </button>
       </div>
 
-      <!-- DOCTOR LIST -->
-      <div class="section-card">
-        <div class="card-head"><span>Doctors in Belt</span><span id="cnt-belt-docs" style="font-size:11px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:6px;">0 Docs</span></div>
-        <div id="belt-doctors-list"></div>
+      <!-- CURRENT ACTIVE BELT BOX (PLACED DIRECTLY ABOVE DOCTOR CALL BOXES) -->
+      <div class="active-belt-banner">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="font-size:11px; font-weight:800; color:#1e40af; text-transform:uppercase; letter-spacing:0.5px;">
+            <i class="fa-solid fa-location-crosshairs"></i> Current Active Belt:
+          </div>
+          <span id="cnt-belt-docs" style="font-size:11px; font-weight:800; background:#2563eb; color:white; padding:2px 8px; border-radius:6px;">
+            0 Calls
+          </span>
+        </div>
+        <select id="active-belt-dropdown" class="select-input" style="margin-bottom:0; background:#ffffff; border:2px solid #2563eb; font-weight:700; color:#1e3a8a;" onchange="loadBeltDoctors()"></select>
       </div>
+
+      <!-- DOCTOR CALL BOXES SECTION -->
+      <div id="belt-doctors-list"></div>
+
     </div>
 
     <!-- POB & CASH ENTRY POPUP -->
     <div id="pob-modal-dialog" class="popup-modal-overlay">
-      <div class="popup-modal-content" style="border: 2px solid var(--emerald);">
+      <div class="popup-modal-content" style="border: 3px solid var(--emerald-dark);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <div><b style="font-size:15px; color:#15803d;" id="selected-doc-display">Doctor Name</b><div style="font-size:11px; color:#64748b;" id="selected-doc-subline">Call Verified</div></div>
-          <button onclick="closePOBBox()" style="background:#fee2e2; border:none; width:28px; height:28px; border-radius:50%; color:red; font-weight:800; cursor:pointer;">&times;</button>
+          <div>
+            <b style="font-size:16px; color:#15803d;" id="selected-doc-display">Doctor Name</b>
+            <div style="font-size:11px; color:#64748b;" id="selected-doc-subline">Clinic Visit Entry</div>
+          </div>
+          <button onclick="closePOBBox()" style="background:#fee2e2; border:none; width:30px; height:30px; border-radius:50%; color:red; font-weight:900; cursor:pointer;">&times;</button>
         </div>
         <select id="pob-item-name" class="select-input"></select>
         <div style="display:flex; gap:8px;">
-          <input type="number" id="pob-manual-rate" class="text-input" placeholder="Rate (₹) [You Decide]" oninput="calculateCustomPOB()">
-          <input type="number" id="pob-qty" class="text-input" placeholder="Qty" oninput="calculateCustomPOB()">
+          <input type="number" id="pob-manual-rate" class="text-input" placeholder="Rate (₹)" oninput="calculateCustomPOB()">
+          <input type="number" id="pob-qty" class="text-input" placeholder="Quantity" oninput="calculateCustomPOB()">
         </div>
         <input type="number" id="pob-total-amount" class="text-input" placeholder="Total POB (₹)" readonly style="background:#f0fdf4; font-weight:800; color:#15803d;">
         <input type="number" id="pob-cash-received" class="text-input" placeholder="Cash Received (₹)" style="background:#fffbeb; border-color:#f59e0b; font-weight:800; color:#b45309;">
-        <button class="btn-main btn-green" onclick="confirmPOBAndCash()">Submit POB & Cash</button>
+        <button class="btn-main btn-green" onclick="confirmPOBAndCash()" style="padding:13px;">
+          <i class="fa-solid fa-check"></i> Submit POB & Cash
+        </button>
       </div>
     </div>
   </div>
@@ -254,18 +363,18 @@
     let selectedDoctorLocation = {};
     let foregroundLiveWatchId = null;
 
-    // -------------------------------------------------------------
-    // PURE NATIVE BACKGROUND SERVICE HOOKS (No Audio / No JS Freeze)
-    // -------------------------------------------------------------
+    function toggleCollectionsDropdown() {
+      const p = document.getElementById("collections-dropdown-panel");
+      p.style.display = (p.style.display === "block") ? "none" : "block";
+    }
+
     function startNativeTracking() {
-      // Direct call to Android Native Foreground Service
       if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.ValchemNativeBridge) {
         window.Capacitor.Plugins.ValchemNativeBridge.startDutyTracking({ mrName: activeMR });
       }
     }
 
     function stopNativeTracking() {
-      // Stop Android Native Foreground Service
       if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.ValchemNativeBridge) {
         window.Capacitor.Plugins.ValchemNativeBridge.stopDutyTracking();
       }
@@ -281,7 +390,6 @@
       return `${h}:${m < 10 ? '0' + m : m} ${ampm}`;
     }
 
-    // --- LOGIN & SESSION STATE ENGINE ---
     function checkExistingLoginSession() {
       const savedUser = localStorage.getItem("valchem_active_mr");
       if (savedUser) {
@@ -303,13 +411,13 @@
       const selectedName = selectEl.value;
 
       if (!selectedName) {
-        errorEl.innerText = "कृपया स्टाफ का नाम चुनें!";
+        errorEl.innerText = "Please select staff name!";
         errorEl.style.display = "block";
         return;
       }
 
       if (!enteredPin || enteredPin.length !== 4) {
-        errorEl.innerText = "कृपया 4-अंकों का PIN दर्ज करें!";
+        errorEl.innerText = "Please enter 4-digit PIN!";
         errorEl.style.display = "block";
         return;
       }
@@ -329,13 +437,13 @@
         updateMRCashDisplay();
         loadBeltDoctors();
       } else {
-        errorEl.innerText = "गलत PIN! कृपया सही पिन दर्ज करें।";
+        errorEl.innerText = "Invalid PIN! Please check and enter again.";
         errorEl.style.display = "block";
       }
     }
 
     function logoutMR() {
-      const confirmLogout = confirm("क्या आप लॉगआउट करना चाहते हैं?");
+      const confirmLogout = confirm("Do you want to log out?");
       if (!confirmLogout) return;
 
       localStorage.removeItem("valchem_active_mr");
@@ -432,7 +540,7 @@
     }
 
     function toggleStaffPunch() {
-      if (!activeMR) return alert("पहले लॉगिन करें!");
+      if (!activeMR) return alert("Please login first!");
       const today = getTodayDateString();
       const timeStr = formatTime12Hour(new Date());
 
@@ -452,14 +560,14 @@
 
         sendOwnerNotification(
           "Punch In Alert",
-          `${activeMR} ne field duty shuru ki at ${timeStr}`,
+          `${activeMR} started field duty at ${timeStr}`,
           "punch_in",
           "green"
         );
 
         applyPunchUI(true);
       } else {
-        const confirmOut = confirm("Kya aap aaj ka session Punch Out karna chahte hain?");
+        const confirmOut = confirm("Do you want to Punch Out for today?");
         if (!confirmOut) return;
 
         localStorage.setItem('valchem_punch_status_' + activeMR, 'INACTIVE');
@@ -472,7 +580,7 @@
 
         sendOwnerNotification(
           "Punch Out Alert",
-          `${activeMR} ne field duty complete ki at ${timeStr}`,
+          `${activeMR} completed field duty at ${timeStr}`,
           "punch_out",
           "red"
         );
@@ -510,7 +618,6 @@
       }
     }
 
-    // Foreground sync when MR is actively using the screen
     function startForegroundFastSync() {
       if (!navigator.geolocation || !activeMR) return;
 
@@ -572,16 +679,17 @@
         capturedDocLat = pos.coords.latitude;
         capturedDocLng = pos.coords.longitude;
         statusEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Locked: ${capturedDocLat.toFixed(4)}, ${capturedDocLng.toFixed(4)}`;
-      }, () => { alert("Turn on GPS location!"); }, { enableHighAccuracy: true, timeout: 8000 });
+      }, () => { alert("Please turn on GPS location!"); }, { enableHighAccuracy: true, timeout: 8000 });
     }
 
     function createNewBelt() {
       const name = document.getElementById("new-belt-name").value.trim();
       const day = document.getElementById("new-belt-day").value;
-      if (!name) return alert("Enter belt name!");
+      if (!name) return alert("Please enter belt name!");
       const id = "belt_" + Date.now();
       db.ref("belts/" + id).set({ id, name, day, doctors: [] });
       document.getElementById("new-belt-name").value = "";
+      alert("New Belt created successfully!");
     }
 
     function renderBeltDropdown() {
@@ -621,25 +729,26 @@
 
       sendOwnerNotification(
         "New Doctor Added",
-        `${activeMR} ne Dr. ${name} (${area}) ko belt mein add kiya`,
+        `${activeMR} added Dr. ${name} (${area}) to route`,
         "doctor_add",
         "blue",
         { doctor: name, area: area, lat: docLat, lng: docLng }
       );
 
-      alert(`${name} saved!`);
+      alert(`${name} registered successfully!`);
       document.getElementById("doc-name").value = "";
       document.getElementById("doc-area").value = "";
       document.getElementById("doc-mobile").value = "";
       document.getElementById("doc-landmark").value = "";
       capturedDocLat = null; capturedDocLng = null;
-      document.getElementById("gps-status-indicator").innerText = "GPS Status: Location not locked yet";
+      document.getElementById("gps-status-indicator").innerText = "GPS Status: Location not locked";
     }
 
-    function updateDoctorLocationLive(beltId, docIdx, docName) {
+    // LOCATION + PIN BUTTON HANDLER
+    function updateDoctorLocationLive(beltId, docOriginalIdx, docName) {
       if (!navigator.geolocation) return alert("GPS not available!");
       
-      const confirmReset = confirm(`Kya aap Dr. ${docName} ki location ko apni CURRENT GPS location par set karna chahte hain?`);
+      const confirmReset = confirm(`Update Dr. ${docName}'s clinic location to your CURRENT GPS location?`);
       if (!confirmReset) return;
 
       navigator.geolocation.getCurrentPosition(pos => {
@@ -648,28 +757,29 @@
 
         const belts = window.currentBelts || [];
         const b = belts.find(x => x.id === beltId);
-        if (!b || !b.doctors || !b.doctors[docIdx]) return;
+        if (!b || !b.doctors || !b.doctors[docOriginalIdx]) return;
 
-        b.doctors[docIdx].lat = newLat;
-        b.doctors[docIdx].lng = newLng;
+        b.doctors[docOriginalIdx].lat = newLat;
+        b.doctors[docOriginalIdx].lng = newLng;
 
         db.ref("belts/" + beltId).set(b).then(() => {
           sendOwnerNotification(
             "Doctor Location Updated",
-            `${activeMR} ne Dr. ${docName} ki location successfully update ki`,
+            `${activeMR} updated location for Dr. ${docName}`,
             "doc_location_reset",
             "amber",
             { doctor: docName, newLat: newLat, newLng: newLng }
           );
 
-          alert(`Dr. ${docName} ki location lock kar di gayi hai (${newLat.toFixed(4)}, ${newLng.toFixed(4)})`);
+          alert(`Dr. ${docName}'s location updated to (${newLat.toFixed(4)}, ${newLng.toFixed(4)})`);
           loadBeltDoctors();
         });
       }, () => {
-        alert("GPS location nahi mil saki. Kripya phone ka Location (GPS) check karein.");
+        alert("Unable to fetch GPS. Please check location settings.");
       }, { enableHighAccuracy: true, timeout: 8000 });
     }
 
+    // LOAD DOCTORS WITH PROGRESSIVE SORTING (COMPLETED GOES TO BOTTOM)
     function loadBeltDoctors() {
       const dd = document.getElementById("active-belt-dropdown");
       if (!dd) return;
@@ -680,48 +790,61 @@
       const today = getTodayDateString();
 
       if (!b || !b.doctors || b.doctors.length === 0) {
-        container.innerHTML = `<p style="font-size:12px; color:#94a3b8; text-align:center; padding:12px;">No doctors in this belt.</p>`;
-        document.getElementById("cnt-belt-docs").innerText = "0 Docs";
+        container.innerHTML = `<p style="font-size:12px; color:#64748b; text-align:center; padding:16px; background:#fff; border-radius:12px; border:2px solid #cbd5e1;">No doctors found in this belt.</p>`;
+        document.getElementById("cnt-belt-docs").innerText = "0 Calls";
         return;
       }
-      document.getElementById("cnt-belt-docs").innerText = `${b.doctors.length} Docs`;
 
-      container.innerHTML = b.doctors.map((d, i) => {
-        const isTodayDone = (d.lastCallDate === today && d.callCompletedTime);
+      // Map doctors with their original indices
+      const indexedDocs = b.doctors.map((d, origIdx) => ({
+        ...d,
+        originalIndex: origIdx,
+        isTodayDone: (d.lastCallDate === today && Boolean(d.callCompletedTime))
+      }));
+
+      // Sort: Pending first (false), Completed locked at bottom (true)
+      indexedDocs.sort((x, y) => Number(x.isTodayDone) - Number(y.isTodayDone));
+
+      const pendingCount = indexedDocs.filter(d => !d.isTodayDone).length;
+      document.getElementById("cnt-belt-docs").innerText = `${pendingCount} Left / ${indexedDocs.length} Total`;
+
+      container.innerHTML = indexedDocs.map((d, displayIdx) => {
+        const seqNumber = displayIdx + 1;
 
         return `
-          <div class="doctor-item ${isTodayDone ? 'visit-completed' : ''}">
+          <div class="doctor-item ${d.isTodayDone ? 'visit-completed' : 'pending-card'}">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
               <div>
-                <div style="font-size:14px; font-weight:800; color:#0f172a;">${d.name}</div>
-                <div style="font-size:11px; color:#64748b; margin-top:2px;">
+                <div class="doctor-name-text">
+                  <span class="seq-badge" style="background:${d.isTodayDone ? '#059669' : '#1e293b'};">${seqNumber}</span>
+                  ${d.name}
+                  <button class="btn-pin-loc" onclick="updateDoctorLocationLive('${beltId}', ${d.originalIndex}, '${d.name}')" title="Set/Pin Doctor GPS Location">
+                    <i class="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+                <div style="font-size:11.5px; font-weight:600; color:#475569; margin-top:4px;">
                   <i class="fa-solid fa-location-dot" style="color:#0284c7;"></i> ${d.area} ${d.landmark ? '(' + d.landmark + ')' : ''}
                 </div>
               </div>
-              <span style="font-size:11px; font-weight:800; color:${isTodayDone ? '#15803d' : '#64748b'}; background:${isTodayDone ? '#dcfce7' : '#f1f5f9'}; padding:3px 8px; border-radius:4px; border:1px solid ${isTodayDone ? '#86efac' : '#cbd5e1'};">
-                ${isTodayDone ? '<i class="fa-solid fa-check"></i> ' + d.callCompletedTime : 'Pending Call'}
+              
+              <span style="font-size:11px; font-weight:800; color:${d.isTodayDone ? '#047857' : '#1e40af'}; background:${d.isTodayDone ? '#dcfce7' : '#dbeafe'}; padding:3px 8px; border-radius:6px; border:1.5px solid ${d.isTodayDone ? '#86efac' : '#93c5fd'};">
+                ${d.isTodayDone ? '<i class="fa-solid fa-check"></i> ' + d.callCompletedTime : 'Pending'}
               </span>
             </div>
 
-            <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
-              <div style="display:flex; gap:8px;">
-                ${!isTodayDone ? `
-                  <button class="btn-main btn-blue" style="flex:1;" id="btn-call-${i}" onclick="verifyDoctorCallWithGeotag(${i}, '${d.name}',${d.lat}, ${d.lng}, '${d.area}')">
-                    <i class="fa-solid fa-clipboard-check"></i> Check-In Call
-                  </button>
-                ` : `
-                  <button class="btn-main" style="flex:1; background:#e2e8f0; color:#64748b; cursor:not-allowed;" disabled title="Aaj ki call verify ho chuki hai">
-                    <i class="fa-solid fa-lock"></i> Call Locked
-                  </button>
-                `}
-
-                <button class="btn-main btn-green" style="flex:1;" onclick="openPOBBox('${d.name}', ${d.lat}, ${d.lng}, '${d.area}', '${d.callCompletedTime || ''}', ${d.lastCallTimestamp || 0})">
-                  <i class="fa-solid fa-cart-shopping"></i> Book POB / Cash
+            <div style="margin-top:12px; display:flex; gap:8px;">
+              ${!d.isTodayDone ? `
+                <button class="btn-main btn-blue" style="flex:1;" id="btn-call-${d.originalIndex}" onclick="verifyDoctorCallWithGeotag(${d.originalIndex}, '${d.name}', ${d.lat}, ${d.lng}, '${d.area}')">
+                  <i class="fa-solid fa-clipboard-check"></i> Check-In Call
                 </button>
-              </div>
+              ` : `
+                <button class="btn-main" style="flex:1; background:#e2e8f0; border-color:#cbd5e1; color:#64748b; cursor:not-allowed;" disabled>
+                  <i class="fa-solid fa-lock"></i> Call Locked
+                </button>
+              `}
 
-              <button class="btn-main btn-amber" style="padding:7px; font-size:11px;" onclick="updateDoctorLocationLive('${beltId}', ${i}, '${d.name}')">
-                <i class="fa-solid fa-crosshairs"></i> 📍 Set / Update Doctor Location Here
+              <button class="btn-main btn-green" style="flex:1;" onclick="openPOBBox('${d.name}', ${d.lat}, ${d.lng}, '${d.area}', '${d.callCompletedTime || ''}', ${d.lastCallTimestamp || 0})">
+                <i class="fa-solid fa-cart-shopping"></i> Book POB / Cash
               </button>
             </div>
           </div>
@@ -729,17 +852,17 @@
       }).join('');
     }
 
-    function verifyDoctorCallWithGeotag(idx, name, docLat, docLng, area) {
-      if (!punchedIn) return alert("Pehle upar se Punch-In karein!");
+    function verifyDoctorCallWithGeotag(origIdx, name, docLat, docLng, area) {
+      if (!punchedIn) return alert("Please Punch-In first from top bar!");
 
-      const callBtn = document.getElementById("btn-call-" + idx);
+      const callBtn = document.getElementById("btn-call-" + origIdx);
       if (callBtn) {
         callBtn.disabled = true;
         callBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Checking GPS...`;
       }
 
       if (!navigator.geolocation) {
-        saveCallTransaction(idx, name, docLat, docLng, area, docLat, docLng, 0, true);
+        saveCallTransaction(origIdx, name, docLat, docLng, area, docLat, docLng, 0, true);
         return;
       }
 
@@ -750,16 +873,16 @@
           const distMeters = calculateDistanceInMeters(docLat, docLng, mrCurrentLat, mrCurrentLng);
           const isVerified = distMeters <= 100;
 
-          saveCallTransaction(idx, name, docLat, docLng, area, mrCurrentLat, mrCurrentLng, distMeters, isVerified);
+          saveCallTransaction(origIdx, name, docLat, docLng, area, mrCurrentLat, mrCurrentLng, distMeters, isVerified);
         },
         err => {
-          saveCallTransaction(idx, name, docLat, docLng, area, docLat, docLng, 0, false);
+          saveCallTransaction(origIdx, name, docLat, docLng, area, docLat, docLng, 0, false);
         },
         { enableHighAccuracy: true, timeout: 8000 }
       );
     }
 
-    function saveCallTransaction(idx, name, docLat, docLng, area, actualLat, actualLng, distanceMeters, isVerified) {
+    function saveCallTransaction(origIdx, name, docLat, docLng, area, actualLat, actualLng, distanceMeters, isVerified) {
       const now = new Date();
       const timeStr = formatTime12Hour(now);
       const callTimestamp = now.getTime();
@@ -769,9 +892,9 @@
       const belts = window.currentBelts || [];
       const b = belts.find(x => x.id === beltId);
 
-      b.doctors[idx].callCompletedTime = timeStr;
-      b.doctors[idx].lastCallDate = today;
-      b.doctors[idx].lastCallTimestamp = callTimestamp;
+      b.doctors[origIdx].callCompletedTime = timeStr;
+      b.doctors[origIdx].lastCallDate = today;
+      b.doctors[origIdx].lastCallTimestamp = callTimestamp;
       db.ref("belts/" + beltId).set(b);
 
       const txId = "tx_" + Date.now();
@@ -796,7 +919,7 @@
 
       sendOwnerNotification(
         "Doctor Call Check-In",
-        `${activeMR} ne Dr. ${name} (${area}) ki visit complete ki (${isVerified ? 'Verified: ' + distanceMeters + 'm' : 'Deviated: ' + distanceMeters + 'm'})`,
+        `${activeMR} completed call for Dr. ${name} (${area}) [${isVerified ? 'Verified: ' + distanceMeters + 'm' : 'Deviated: ' + distanceMeters + 'm'}]`,
         "call",
         isVerified ? "green" : "amber",
         { doctor: name, area: area, distance: distanceMeters }
@@ -810,7 +933,7 @@
     }
 
     function openPOBBox(name, lat, lng, area, completedTimeStr, callTimestamp) {
-      if (!punchedIn) return alert("Pehle Punch-In karein!");
+      if (!punchedIn) return alert("Please Punch-In first!");
 
       selectedDoctorForPOB = name;
       selectedDoctorLocation = {
@@ -851,7 +974,7 @@
       const pobAmount = parseFloat(document.getElementById("pob-total-amount").value) || 0;
       const cashReceived = parseFloat(document.getElementById("pob-cash-received").value) || 0;
       
-      if (!pobAmount && !cashReceived) return alert("Kripya POB Amount ya Cash daalein!");
+      if (!pobAmount && !cashReceived) return alert("Please enter POB Amount or Cash Received!");
 
       const now = new Date();
       const currentTimestamp = now.getTime();
@@ -887,7 +1010,7 @@
       if (pobAmount > 0) {
         sendOwnerNotification(
           "POB Booked",
-          `${activeMR} ne Dr. ${selectedDoctorForPOB} se ₹${pobAmount} ka POB liya (${item})`,
+          `${activeMR} booked ₹${pobAmount} POB for Dr. ${selectedDoctorForPOB} (${item})`,
           "pob",
           "green",
           { doctor: selectedDoctorForPOB, pob: pobAmount, product: item }
@@ -897,14 +1020,14 @@
       if (cashReceived > 0) {
         sendOwnerNotification(
           "Cash Collected",
-          `${activeMR} ne Dr. ${selectedDoctorForPOB} se ₹${cashReceived} cash collect kiya`,
+          `${activeMR} collected ₹${cashReceived} cash from Dr. ${selectedDoctorForPOB}`,
           "cash",
           "amber",
           { doctor: selectedDoctorForPOB, cash: cashReceived }
         );
       }
 
-      alert("POB / Cash Entry Saved Successfully!");
+      alert("POB & Cash recorded successfully!");
       closePOBBox();
     }
 
