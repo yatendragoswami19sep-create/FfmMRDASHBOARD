@@ -21,26 +21,19 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Build Android Project with Field Rx Branding
+      - name: Install ImageMagick for Icon Resizing
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Build Android Project with Field Rx Branding & Custom Icon
         run: |
           mkdir app-build && cd app-build
           npm init -y
-          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5 @capacitor/assets
+          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5
           
-          # Initialize app with Field Rx branding
           npx cap init "Field Rx" "com.fieldrx.app" --web-dir www
           mkdir www
           cp ../index.html www/index.html
           
-          # Check and setup app icon if uploaded
-          if [ -f "../icon.png" ]; then
-            mkdir -p assets
-            cp ../icon.png assets/icon-only.png
-            cp ../icon.png assets/icon-foreground.png
-            cp ../icon.png assets/splash.png
-            npx @capacitor/assets generate --android
-          fi
-
           sed -i 's/<\/head>/<script src="capacitor.js"><\/script><\/head>/g' www/index.html
 
           cat << 'EOF' > capacitor.config.json
@@ -60,9 +53,35 @@ jobs:
           EOF
 
           npx cap add android
+
+          # FORCE REPLACE ANDROID APP ICONS ACROSS ALL RESOLUTIONS
+          if [ -f "../icon.png" ]; then
+            echo "Custom icon found! Generating mipmap icons..."
+            RES_DIR="android/app/src/main/res"
+
+            convert ../icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher.png
+            convert ../icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_round.png
+            convert ../icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_foreground.png
+
+            convert ../icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher.png
+            convert ../icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_round.png
+            convert ../icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_foreground.png
+
+            convert ../icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher.png
+            convert ../icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_round.png
+            convert ../icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png
+
+            convert ../icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher.png
+            convert ../icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_round.png
+            convert ../icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png
+
+            convert ../icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher.png
+            convert ../icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png
+            convert ../icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png
+          fi
+
           npx cap sync android
 
-          # Update Android strings for app name display
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">Field Rx<\/string>/g' android/app/src/main/res/values/strings.xml
           sed -i 's/<string name="title_activity_main">.*<\/string>/<string name="title_activity_main">Field Rx<\/string>/g' android/app/src/main/res/values/strings.xml
 
