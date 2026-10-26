@@ -169,7 +169,7 @@
 </head>
 <body>
 
-  <!-- LOGIN -->
+  <!-- LOGIN SCREEN -->
   <div id="mr-login-screen">
     <div class="login-card">
       <div style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
@@ -288,7 +288,7 @@
         <button onclick="closeSideDrawer()" style="background:#fee2e2; border:none; width:26px; height:26px; border-radius:50%; color:red; font-weight:900; cursor:pointer;">&times;</button>
       </div>
 
-      <!-- CREATE BELT -->
+      <!-- CREATE BELT WITH HYBRID RESCHEDULE -->
       <div style="background:linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border:2px solid #eab308; border-radius:10px; padding:10px; margin-bottom:12px;">
         <div style="font-size:12px; font-weight:900; color:#854d0e; margin-bottom:7px; text-transform:uppercase;">
           <i class="fa-solid fa-route"></i> Create Route / Belt
@@ -298,18 +298,22 @@
         
         <label style="font-size:10px; font-weight:800; color:#92400e; display:block; margin-bottom:3px;">SELECT DAY (12-DAY CYCLE):</label>
         
-        <!-- MODERN DAY PICKER TRIGGER -->
         <div id="new-belt-day-trigger" class="custom-select-trigger" onclick="openDayPicker()" style="border-color:#d97706; margin-bottom:7px; padding:8px 10px;">
           <span id="new-belt-day-label" style="font-size:12px; font-weight:800; color:#0f172a;">1. Monday</span>
           <i class="fa-solid fa-chevron-down" style="font-size:9.5px; color:#d97706;"></i>
         </div>
         <input type="hidden" id="new-belt-day" value="Monday">
 
-        <div id="day-engagement-status" style="display:none; font-size:10.5px; font-weight:700; color:#b91c1c; background:#fee2e2; border:1px solid #f87171; border-radius:6px; padding:6px 8px; margin-bottom:7px;">
-          <span>Day assigned to: <b id="engaged-belt-name"></b></span>
-          <div style="margin-top:3px;">
-            <button type="button" onclick="triggerRescheduleBelt()" style="background:#b91c1c; color:white; border:none; padding:3px 7px; border-radius:4px; font-size:10px; font-weight:800; cursor:pointer;">
-              <i class="fa-solid fa-calendar-days"></i> Reschedule This Day
+        <!-- HYBRID SMART RESCHEDULE CARD (MOVE TO FREE OR SWAP) -->
+        <div id="day-engagement-status" style="display:none; font-size:11px; font-weight:700; color:#991b1b; background:#fee2e2; border:1.5px solid #f87171; border-radius:8px; padding:8px 9px; margin-bottom:7px;">
+          <div><i class="fa-solid fa-circle-exclamation"></i> Already assigned to: <b id="engaged-belt-name"></b></div>
+          
+          <div style="margin-top:6px; display:flex; gap:6px;">
+            <button type="button" onclick="openFreeDaysShiftPicker()" style="flex:1; background:#15803d; color:white; border:none; padding:5px 6px; border-radius:5px; font-size:10px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;">
+              <i class="fa-solid fa-arrow-right-arrow-left"></i> Shift to Free Day
+            </button>
+            <button type="button" onclick="openRouteSwapPicker()" style="flex:1; background:#0369a1; color:white; border:none; padding:5px 6px; border-radius:5px; font-size:10px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;">
+              <i class="fa-solid fa-repeat"></i> Swap Routes
             </button>
           </div>
         </div>
@@ -452,7 +456,7 @@
     }
 
     // -------------------------------------------------------------
-    // STYLISH BOTTOM SHEET PICKER ENGINE
+    // STYLISH BOTTOM SHEET PICKER SYSTEM
     // -------------------------------------------------------------
     let currentPickerCallback = null;
 
@@ -521,9 +525,9 @@
           value: dayName,
           label: `${idx + 1}. ${dayName}`,
           icon: "fa-regular fa-calendar-days",
-          badge: isEngaged ? "Engaged" : "",
-          badgeBg: isEngaged ? "#fee2e2" : "",
-          badgeColor: isEngaged ? "#b91c1c" : ""
+          badge: isEngaged ? "Engaged" : "Free",
+          badgeBg: isEngaged ? "#fee2e2" : "#dcfce7",
+          badgeColor: isEngaged ? "#b91c1c" : "#15803d"
         };
       });
       const cur = document.getElementById("new-belt-day").value;
@@ -548,6 +552,108 @@
         document.getElementById("pob-item-label").innerText = val;
         calculateCustomPOB();
       });
+    }
+
+    // -------------------------------------------------------------
+    // HYBRID RESCHEDULE ENGINE (MOVE TO FREE DAY OR AUTO SWAP)
+    // -------------------------------------------------------------
+    
+    // 1. Move to Free Day Picker
+    function openFreeDaysShiftPicker() {
+      if (!window.activeConflictBelt) return;
+      const b = window.activeConflictBelt;
+      const belts = window.currentBelts || [];
+
+      // Find free days only
+      const freeDays = CYCLE_DAYS_12.filter(d => !belts.some(belt => belt.day === d));
+
+      if (freeDays.length === 0) {
+        return alert("All 12 days are fully engaged! Use 'Swap Routes' to exchange with another route.");
+      }
+
+      const items = freeDays.map(d => ({
+        value: d,
+        label: `${CYCLE_DAYS_12.indexOf(d) + 1}. ${d}`,
+        icon: "fa-solid fa-calendar-check",
+        badge: "Free Day",
+        badgeBg: "#dcfce7",
+        badgeColor: "#15803d"
+      }));
+
+      openSheetPicker(`Shift "${b.name}" to Free Day`, items, "", newDay => {
+        db.ref("belts/" + b.id).update({ day: newDay }).then(() => {
+          alert(`Success! "${b.name}" shifted to ${newDay}.`);
+          checkSelectedDayStatus();
+          renderBeltDropdown();
+        });
+      });
+    }
+
+    // 2. Auto Swap Picker
+    function openRouteSwapPicker() {
+      if (!window.activeConflictBelt) return;
+      const currentBelt = window.activeConflictBelt;
+      const belts = window.currentBelts || [];
+
+      // Find other belts that have different days
+      const otherBelts = belts.filter(x => x.id !== currentBelt.id);
+
+      if (otherBelts.length === 0) {
+        return alert("No other route exists to swap with!");
+      }
+
+      const items = otherBelts.map(x => ({
+        value: x.id,
+        label: `${x.name} (Currently: ${x.day})`,
+        icon: "fa-solid fa-repeat",
+        badge: "Swap Target",
+        badgeBg: "#e0f2fe",
+        badgeColor: "#0369a1"
+      }));
+
+      openSheetPicker(`Swap "${currentBelt.name}" With:`, items, "", targetBeltId => {
+        const targetBelt = belts.find(x => x.id === targetBeltId);
+        if (!targetBelt) return;
+
+        const day1 = currentBelt.day;
+        const day2 = targetBelt.day;
+
+        // Perform atomic swap
+        const updates = {};
+        updates["belts/" + currentBelt.id + "/day"] = day2;
+        updates["belts/" + targetBelt.id + "/day"] = day1;
+
+        db.ref().update(updates).then(() => {
+          alert(`Routes Swapped Successfully!\n• "${currentBelt.name}" is now on ${day2}\n• "${targetBelt.name}" is now on ${day1}`);
+          checkSelectedDayStatus();
+          renderBeltDropdown();
+        });
+      });
+    }
+
+    function checkSelectedDayStatus() {
+      const selectedDay = document.getElementById("new-belt-day").value;
+      const belts = window.currentBelts || [];
+      const warnBox = document.getElementById("day-engagement-status");
+      const engagedNameEl = document.getElementById("engaged-belt-name");
+      const saveBtn = document.getElementById("btn-save-belt");
+
+      const existingBelt = belts.find(b => b.day === selectedDay);
+
+      if (existingBelt) {
+        warnBox.style.display = "block";
+        engagedNameEl.innerText = `${existingBelt.name}`;
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = "0.45";
+        saveBtn.style.cursor = "not-allowed";
+        window.activeConflictBelt = existingBelt;
+      } else {
+        warnBox.style.display = "none";
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = "1";
+        saveBtn.style.cursor = "pointer";
+        window.activeConflictBelt = null;
+      }
     }
 
     function getTodayDateString() { return new Date().toISOString().split('T')[0]; }
@@ -819,43 +925,6 @@
         capturedDocLng = pos.coords.longitude;
         statusEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Locked: ${capturedDocLat.toFixed(4)}, ${capturedDocLng.toFixed(4)}`;
       }, () => { alert("Please turn on GPS location!"); }, { enableHighAccuracy: true, timeout: 8000 });
-    }
-
-    function checkSelectedDayStatus() {
-      const selectedDay = document.getElementById("new-belt-day").value;
-      const belts = window.currentBelts || [];
-      const warnBox = document.getElementById("day-engagement-status");
-      const engagedNameEl = document.getElementById("engaged-belt-name");
-      const saveBtn = document.getElementById("btn-save-belt");
-
-      const existingBelt = belts.find(b => b.day === selectedDay);
-
-      if (existingBelt) {
-        warnBox.style.display = "block";
-        engagedNameEl.innerText = `${existingBelt.name}`;
-        saveBtn.disabled = true;
-        saveBtn.style.opacity = "0.5";
-        saveBtn.style.cursor = "not-allowed";
-        window.activeConflictBelt = existingBelt;
-      } else {
-        warnBox.style.display = "none";
-        saveBtn.disabled = false;
-        saveBtn.style.opacity = "1";
-        saveBtn.style.cursor = "pointer";
-        window.activeConflictBelt = null;
-      }
-    }
-
-    function triggerRescheduleBelt() {
-      if (!window.activeConflictBelt) return;
-      const b = window.activeConflictBelt;
-      const newDay = prompt(`Reschedule "${b.name}" to another day (e.g. 2nd Monday, Friday):`, b.day);
-      if (!newDay) return;
-
-      db.ref("belts/" + b.id).update({ day: newDay }).then(() => {
-        alert(`Route "${b.name}" rescheduled to ${newDay}!`);
-        checkSelectedDayStatus();
-      });
     }
 
     function createNewBelt() {
