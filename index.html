@@ -27,6 +27,11 @@
       --card: #ffffff; 
       --border-dark: #334155; 
       --text: #0f172a; 
+      
+      /* THEME CUSTOM PALETTES */
+      --yellow-border: #eab308;
+      --dark-sea-green: #2e8b57;
+      --dark-sea-border: #1b4d3e;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: #cbd5e1; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
@@ -40,19 +45,33 @@
     .nav-action-btn { background: #1e293b; border: 1.5px solid #334155; color: #f8fafc; padding: 7px 11px; border-radius: 8px; cursor: pointer; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
     
     .session-info-bar { background: #e0f2fe; padding: 8px 16px; font-size: 11px; font-weight: 700; color: var(--primary-dark); display: flex; justify-content: space-between; border-bottom: 1.5px solid #bae6fd; }
-    .dashboard-body { padding: 14px 14px 40px 14px; flex: 1; overflow-y: auto; }
+    .dashboard-body { padding: 12px 14px 40px 14px; flex: 1; overflow-y: auto; }
     
     /* CARDS COMMON */
-    .section-card { background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 14px; border: 2px solid var(--border-dark); box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06); }
-    .card-head { font-size: 13.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .section-card { border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(15, 23, 42, 0.05); }
     
+    /* SPECIFIC CUSTOM CARDS */
+    .belt-setup-card {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 3px solid var(--yellow-border);
+    }
+    .doctor-setup-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border: 3px solid var(--dark-sea-border);
+      padding: 11px 13px;
+    }
+    
+    .card-head { font-size: 13.5px; font-weight: 800; color: var(--text); display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .card-head-darkbold { font-size: 14.5px; font-weight: 900; color: #78350f; text-shadow: 0 0.5px 0 rgba(0,0,0,0.1); }
+
     /* INPUTS & BUTTONS */
-    .text-input, .select-input { width: 100%; padding: 11px 12px; border: 2px solid #94a3b8; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--text); background: #ffffff; margin-bottom: 10px; outline: none; }
+    .text-input, .select-input { width: 100%; padding: 9px 11px; border: 2px solid #94a3b8; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--text); background: #ffffff; margin-bottom: 8px; outline: none; }
     .text-input:focus, .select-input:focus { border-color: var(--primary); }
-    .btn-main { width: 100%; padding: 11px 12px; border: 2px solid transparent; border-radius: 8px; font-size: 12.5px; font-weight: 800; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; transition: transform 0.1s ease; }
+    .btn-main { width: 100%; padding: 10px 12px; border: 2px solid transparent; border-radius: 8px; font-size: 12.5px; font-weight: 800; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; transition: transform 0.1s ease; }
     .btn-main:active { transform: scale(0.98); }
     .btn-blue { background: #0284c7; border-color: #0369a1; }
     .btn-green { background: #10b981; border-color: #047857; }
+    .btn-sea-green { background: #1e5e3a; border-color: #123823; }
     .btn-amber { background: #d97706; border-color: #b45309; }
 
     /* BELT HIGHLIGHT BAR */
@@ -70,8 +89,8 @@
       background: #ffffff; 
       border: 2.5px solid #475569; 
       border-radius: 12px; 
-      padding: 13px 14px; 
-      margin-bottom: 12px; 
+      padding: 12px 14px; 
+      margin-bottom: 11px; 
       box-shadow: 0 4px 8px rgba(15, 23, 42, 0.05);
       position: relative;
     }
@@ -84,7 +103,7 @@
       border-color: #059669; 
       background: #f0fdf4; 
       border-left: 6px solid #059669;
-      opacity: 0.9;
+      opacity: 0.92;
     }
 
     .seq-badge {
@@ -113,8 +132,8 @@
     }
 
     .btn-pin-loc {
-      width: 28px;
-      height: 28px;
+      width: 27px;
+      height: 27px;
       border-radius: 6px;
       background: #fef3c7;
       border: 1.5px solid #f59e0b;
@@ -122,7 +141,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 900;
       cursor: pointer;
       margin-left: 8px;
@@ -222,7 +241,6 @@
       </div>
       
       <div style="display:flex; align-items:center; gap:6px;">
-        <!-- DROPDOWN BUTTON FOR CASH & POB -->
         <button class="nav-action-btn" onclick="toggleCollectionsDropdown()" title="Collections Summary">
           <i class="fa-solid fa-wallet" style="color:#fbbf24;"></i> Summary <i class="fa-solid fa-chevron-down" style="font-size:10px;"></i>
         </button>
@@ -257,46 +275,74 @@
 
     <div class="dashboard-body">
       
-      <!-- BELT SETUP CARD (ATTRACTIVE & MINIMAL) -->
-      <div class="section-card" style="border-color:#3b82f6; background:#ffffff;">
-        <div class="card-head" style="color:#1d4ed8;">
-          <span><i class="fa-solid fa-route"></i> Create Route / Belt</span>
+      <!-- BELT SETUP CARD -->
+      <div class="section-card belt-setup-card">
+        <div class="card-head">
+          <span class="card-head-darkbold"><i class="fa-solid fa-route" style="color:#b45309;"></i> CREATE ROUTE / BELT</span>
+          <span id="current-cycle-indicator" style="font-size:10.5px; font-weight:800; background:#f59e0b; color:white; padding:2px 7px; border-radius:5px;">2-Week Plan</span>
         </div>
-        <input type="text" id="new-belt-name" class="text-input" placeholder="Belt Name (e.g. Sanjay Place, Kamla Nagar)">
-        <select id="new-belt-day" class="select-input">
-          <option value="Monday">Monday</option><option value="Tuesday">Tuesday</option><option value="Wednesday">Wednesday</option>
-          <option value="Thursday">Thursday</option><option value="Friday">Friday</option><option value="Saturday">Saturday</option>
-        </select>
-        <button class="btn-main btn-blue" onclick="createNewBelt()">
+        
+        <input type="text" id="new-belt-name" class="text-input" placeholder="Belt Name (e.g. Sanjay Place, Kamla Nagar)" style="border-color:#d97706;">
+        
+        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap: 8px;">
+          <select id="new-belt-cycle" class="select-input" style="border-color:#d97706;" onchange="updateBeltDayEngagementDisplay()">
+            <option value="Week 1">Week 1 (Days 1–6)</option>
+            <option value="Week 2">Week 2 (Days 7–12)</option>
+            <option value="Both Weeks">Both Weeks (Repeat)</option>
+          </select>
+
+          <select id="new-belt-day" class="select-input" style="border-color:#d97706;" onchange="checkSelectedDayStatus()">
+            <option value="Monday">Monday</option>
+            <option value="Tuesday">Tuesday</option>
+            <option value="Wednesday">Wednesday</option>
+            <option value="Thursday">Thursday</option>
+            <option value="Friday">Friday</option>
+            <option value="Saturday">Saturday</option>
+          </select>
+        </div>
+
+        <!-- DAY ENGAGEMENT WARNING & RESCHEDULE OPTION -->
+        <div id="day-engagement-status" style="display:none; font-size:11.5px; font-weight:700; color:#b91c1c; background:#fee2e2; border:1.5px solid #f87171; border-radius:8px; padding:7px 10px; margin-bottom:8px;">
+          <span>This day is already assigned to: <b id="engaged-belt-name"></b></span>
+          <div style="margin-top:4px;">
+            <button type="button" onclick="triggerRescheduleBelt()" style="background:#b91c1c; color:white; border:none; padding:4px 8px; border-radius:5px; font-size:10.5px; font-weight:800; cursor:pointer;">
+              <i class="fa-solid fa-calendar-days"></i> Reschedule This Day
+            </button>
+          </div>
+        </div>
+
+        <button class="btn-main" id="btn-save-belt" onclick="createNewBelt()" style="background:#b45309; border-color:#92400e;">
           <i class="fa-solid fa-plus"></i> Save New Belt
         </button>
       </div>
 
       <!-- ADD DOCTOR WITH GPS -->
-      <div class="section-card" style="border-color:#059669;">
-        <div class="card-head" style="color:#047857;">
-          <span><i class="fa-solid fa-user-doctor"></i> Add Doctor to Route</span>
+      <div class="section-card doctor-setup-card">
+        <div class="card-head" style="margin-bottom:7px;">
+          <span style="font-size:13px; font-weight:900; color:#14532d;"><i class="fa-solid fa-user-doctor"></i> Add Doctor to Route</span>
         </div>
-        <input type="text" id="doc-name" class="text-input" placeholder="Doctor / Clinic Name">
-        <div style="display:flex; gap:8px;">
-          <input type="text" id="doc-area" class="text-input" placeholder="Market / Area">
-          <input type="tel" id="doc-mobile" class="text-input" placeholder="Mobile Number">
+        <input type="text" id="doc-name" class="text-input" placeholder="Doctor / Clinic Name" style="padding:8px 10px; border-color:#2e8b57; margin-bottom:6px;">
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="doc-area" class="text-input" placeholder="Market / Area" style="padding:8px 10px; border-color:#2e8b57; margin-bottom:6px;">
+          <input type="tel" id="doc-mobile" class="text-input" placeholder="Mobile Number" style="padding:8px 10px; border-color:#2e8b57; margin-bottom:6px;">
         </div>
-        <input type="text" id="doc-landmark" class="text-input" placeholder="Landmark">
+        <input type="text" id="doc-landmark" class="text-input" placeholder="Landmark (Optional)" style="padding:8px 10px; border-color:#2e8b57; margin-bottom:6px;">
         
-        <button type="button" class="btn-main" onclick="captureDoctorGPS()" style="background:#0284c7; border-color:#0369a1; margin-bottom:6px;">
-          <i class="fa-solid fa-crosshairs"></i> Capture Current GPS Location
-        </button>
-        <div id="gps-status-indicator" style="font-size:11px; font-weight:700; color:#0369a1; margin-bottom:10px; text-align:center;">
+        <div style="display:flex; gap:6px; margin-bottom:6px;">
+          <button type="button" class="btn-main btn-blue" onclick="captureDoctorGPS()" style="flex:1; padding:7px 9px; font-size:11.5px;">
+            <i class="fa-solid fa-crosshairs"></i> Capture GPS
+          </button>
+          <button class="btn-main btn-sea-green" onclick="saveDoctorToBelt()" style="flex:1; padding:7px 9px; font-size:11.5px;">
+            <i class="fa-solid fa-check"></i> Register Doctor
+          </button>
+        </div>
+
+        <div id="gps-status-indicator" style="font-size:10.5px; font-weight:700; color:#166534; text-align:center;">
           GPS Status: Location not locked
         </div>
-
-        <button class="btn-main btn-green" onclick="saveDoctorToBelt()">
-          <i class="fa-solid fa-check"></i> Register Doctor
-        </button>
       </div>
 
-      <!-- CURRENT ACTIVE BELT BOX (PLACED DIRECTLY ABOVE DOCTOR CALL BOXES) -->
+      <!-- CURRENT ACTIVE BELT BOX -->
       <div class="active-belt-banner">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <div style="font-size:11px; font-weight:800; color:#1e40af; text-transform:uppercase; letter-spacing:0.5px;">
@@ -314,7 +360,7 @@
 
     </div>
 
-    <!-- POB & CASH ENTRY POPUP -->
+    <!-- POB & CASH ENTRY POPUP (RATE FIELD PRESENT BUT BLANK/NOT PREFILLED) -->
     <div id="pob-modal-dialog" class="popup-modal-overlay">
       <div class="popup-modal-content" style="border: 3px solid var(--emerald-dark);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -324,13 +370,18 @@
           </div>
           <button onclick="closePOBBox()" style="background:#fee2e2; border:none; width:30px; height:30px; border-radius:50%; color:red; font-weight:900; cursor:pointer;">&times;</button>
         </div>
+        
         <select id="pob-item-name" class="select-input"></select>
+
         <div style="display:flex; gap:8px;">
+          <!-- Rate field present, placeholder says 'Rate (₹)', initial value empty -->
           <input type="number" id="pob-manual-rate" class="text-input" placeholder="Rate (₹)" oninput="calculateCustomPOB()">
           <input type="number" id="pob-qty" class="text-input" placeholder="Quantity" oninput="calculateCustomPOB()">
         </div>
-        <input type="number" id="pob-total-amount" class="text-input" placeholder="Total POB (₹)" readonly style="background:#f0fdf4; font-weight:800; color:#15803d;">
+
+        <input type="number" id="pob-total-amount" class="text-input" placeholder="Total POB (₹)" style="background:#f0fdf4; font-weight:800; color:#15803d;">
         <input type="number" id="pob-cash-received" class="text-input" placeholder="Cash Received (₹)" style="background:#fffbeb; border-color:#f59e0b; font-weight:800; color:#b45309;">
+        
         <button class="btn-main btn-green" onclick="confirmPOBAndCash()" style="padding:13px;">
           <i class="fa-solid fa-check"></i> Submit POB & Cash
         </button>
@@ -652,6 +703,7 @@
         const val = snapshot.val();
         window.currentBelts = val ? Object.values(val) : [];
         renderBeltDropdown();
+        updateBeltDayEngagementDisplay();
         loadBeltDoctors();
       });
 
@@ -674,7 +726,7 @@
     function captureDoctorGPS() {
       const statusEl = document.getElementById("gps-status-indicator");
       if (!navigator.geolocation) return alert("GPS not supported!");
-      statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Fetching live coordinates...`;
+      statusEl.innerHTML = `Fetching live coordinates...`;
       navigator.geolocation.getCurrentPosition(pos => {
         capturedDocLat = pos.coords.latitude;
         capturedDocLng = pos.coords.longitude;
@@ -682,21 +734,88 @@
       }, () => { alert("Please turn on GPS location!"); }, { enableHighAccuracy: true, timeout: 8000 });
     }
 
+    // 12-DAY CYCLE / DAY ENGAGEMENT LOGIC
+    function checkSelectedDayStatus() {
+      const selectedDay = document.getElementById("new-belt-day").value;
+      const selectedCycle = document.getElementById("new-belt-cycle").value;
+      const belts = window.currentBelts || [];
+      const warnBox = document.getElementById("day-engagement-status");
+      const engagedNameEl = document.getElementById("engaged-belt-name");
+      const saveBtn = document.getElementById("btn-save-belt");
+
+      const existingBelt = belts.find(b => {
+        const matchDay = (b.day === selectedDay);
+        const matchCycle = (b.cycle === selectedCycle || b.cycle === "Both Weeks" || selectedCycle === "Both Weeks");
+        return matchDay && matchCycle;
+      });
+
+      if (existingBelt) {
+        warnBox.style.display = "block";
+        engagedNameEl.innerText = `${existingBelt.name} (${existingBelt.cycle || 'Week 1'})`;
+        saveBtn.disabled = true;
+        saveBtn.style.opacity = "0.5";
+        saveBtn.style.cursor = "not-allowed";
+        window.activeConflictBelt = existingBelt;
+      } else {
+        warnBox.style.display = "none";
+        saveBtn.disabled = false;
+        saveBtn.style.opacity = "1";
+        saveBtn.style.cursor = "pointer";
+        window.activeConflictBelt = null;
+      }
+    }
+
+    function updateBeltDayEngagementDisplay() {
+      const daySelect = document.getElementById("new-belt-day");
+      const selectedCycle = document.getElementById("new-belt-cycle").value;
+      const belts = window.currentBelts || [];
+      const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+      daySelect.innerHTML = days.map(d => {
+        const isEngaged = belts.some(b => b.day === d && (b.cycle === selectedCycle || b.cycle === "Both Weeks" || selectedCycle === "Both Weeks"));
+        return `<option value="${d}">${d} ${isEngaged ? '• [Engaged]' : ''}</option>`;
+      }).join('');
+
+      checkSelectedDayStatus();
+    }
+
+    function triggerRescheduleBelt() {
+      if (!window.activeConflictBelt) return;
+      const b = window.activeConflictBelt;
+      const newDay = prompt(`Reschedule "${b.name}" to another day (e.g. Monday, Tuesday):`, b.day);
+      if (!newDay) return;
+
+      db.ref("belts/" + b.id).update({ day: newDay }).then(() => {
+        alert(`Route "${b.name}" successfully rescheduled to ${newDay}!`);
+        checkSelectedDayStatus();
+      });
+    }
+
     function createNewBelt() {
       const name = document.getElementById("new-belt-name").value.trim();
       const day = document.getElementById("new-belt-day").value;
+      const cycle = document.getElementById("new-belt-cycle").value;
+
       if (!name) return alert("Please enter belt name!");
+      
       const id = "belt_" + Date.now();
-      db.ref("belts/" + id).set({ id, name, day, doctors: [] });
+      db.ref("belts/" + id).set({ 
+        id, 
+        name, 
+        day, 
+        cycle: cycle || "Week 1",
+        doctors: [] 
+      });
+
       document.getElementById("new-belt-name").value = "";
-      alert("New Belt created successfully!");
+      alert(`New Belt created for ${day} (${cycle})!`);
     }
 
     function renderBeltDropdown() {
       const belts = window.currentBelts || [];
       const dd = document.getElementById("active-belt-dropdown");
       const currentSelected = dd.value;
-      dd.innerHTML = belts.map(b => `<option value="${b.id}">${b.name} (${b.day})</option>`).join('');
+      dd.innerHTML = belts.map(b => `<option value="${b.id}">${b.name} (${b.day} - ${b.cycle || 'W1'})</option>`).join('');
       if (currentSelected) dd.value = currentSelected;
     }
 
@@ -744,7 +863,6 @@
       document.getElementById("gps-status-indicator").innerText = "GPS Status: Location not locked";
     }
 
-    // LOCATION + PIN BUTTON HANDLER
     function updateDoctorLocationLive(beltId, docOriginalIdx, docName) {
       if (!navigator.geolocation) return alert("GPS not available!");
       
@@ -779,7 +897,6 @@
       }, { enableHighAccuracy: true, timeout: 8000 });
     }
 
-    // LOAD DOCTORS WITH PROGRESSIVE SORTING (COMPLETED GOES TO BOTTOM)
     function loadBeltDoctors() {
       const dd = document.getElementById("active-belt-dropdown");
       if (!dd) return;
@@ -795,14 +912,13 @@
         return;
       }
 
-      // Map doctors with their original indices
       const indexedDocs = b.doctors.map((d, origIdx) => ({
         ...d,
         originalIndex: origIdx,
         isTodayDone: (d.lastCallDate === today && Boolean(d.callCompletedTime))
       }));
 
-      // Sort: Pending first (false), Completed locked at bottom (true)
+      // Sort: Pending top, Completed locked down
       indexedDocs.sort((x, y) => Number(x.isTodayDone) - Number(y.isTodayDone));
 
       const pendingCount = indexedDocs.filter(d => !d.isTodayDone).length;
@@ -834,7 +950,7 @@
 
             <div style="margin-top:12px; display:flex; gap:8px;">
               ${!d.isTodayDone ? `
-                <button class="btn-main btn-blue" style="flex:1;" id="btn-call-${d.originalIndex}" onclick="verifyDoctorCallWithGeotag(${d.originalIndex}, '${d.name}', ${d.lat}, ${d.lng}, '${d.area}')">
+                <button class="btn-main btn-blue" style="flex:1;" id="btn-call-${d.originalIndex}" onclick="instantCheckInDoctorCall(${d.originalIndex}, '${d.name}', ${d.lat}, ${d.lng}, '${d.area}')">
                   <i class="fa-solid fa-clipboard-check"></i> Check-In Call
                 </button>
               ` : `
@@ -852,13 +968,14 @@
       }).join('');
     }
 
-    function verifyDoctorCallWithGeotag(origIdx, name, docLat, docLng, area) {
+    // INSTANT CHECK-IN: NO SPINNER FREEZE / DIRECT SUBMIT
+    function instantCheckInDoctorCall(origIdx, name, docLat, docLng, area) {
       if (!punchedIn) return alert("Please Punch-In first from top bar!");
 
       const callBtn = document.getElementById("btn-call-" + origIdx);
       if (callBtn) {
         callBtn.disabled = true;
-        callBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Checking GPS...`;
+        callBtn.innerText = "Submitting...";
       }
 
       if (!navigator.geolocation) {
@@ -871,14 +988,14 @@
           const mrCurrentLat = pos.coords.latitude;
           const mrCurrentLng = pos.coords.longitude;
           const distMeters = calculateDistanceInMeters(docLat, docLng, mrCurrentLat, mrCurrentLng);
-          const isVerified = distMeters <= 100;
+          const isVerified = distMeters <= 120;
 
           saveCallTransaction(origIdx, name, docLat, docLng, area, mrCurrentLat, mrCurrentLng, distMeters, isVerified);
         },
         err => {
           saveCallTransaction(origIdx, name, docLat, docLng, area, docLat, docLng, 0, false);
         },
-        { enableHighAccuracy: true, timeout: 8000 }
+        { enableHighAccuracy: false, timeout: 2500, maximumAge: 60000 }
       );
     }
 
@@ -919,17 +1036,13 @@
 
       sendOwnerNotification(
         "Doctor Call Check-In",
-        `${activeMR} completed call for Dr. ${name} (${area}) [${isVerified ? 'Verified: ' + distanceMeters + 'm' : 'Deviated: ' + distanceMeters + 'm'}]`,
+        `${activeMR} completed call for Dr. ${name} (${area}) [${isVerified ? 'Verified: ' + distanceMeters + 'm' : 'Deviated'}]`,
         "call",
         isVerified ? "green" : "amber",
         { doctor: name, area: area, distance: distanceMeters }
       );
 
-      if (isVerified) {
-        alert(`Doctor Call Verified at ${timeStr} (Near Clinic: ${distanceMeters}m)`);
-      } else {
-        alert(`Call Recorded at ${timeStr}\nNotice: Distance is ${distanceMeters > 1000 ? (distanceMeters/1000).toFixed(1) + ' km' : distanceMeters + 'm'} away from clinic.`);
-      }
+      loadBeltDoctors();
     }
 
     function openPOBBox(name, lat, lng, area, completedTimeStr, callTimestamp) {
@@ -949,9 +1062,10 @@
 
       const products = window.currentProducts || [];
       const sel = document.getElementById("pob-item-name");
-      sel.innerHTML = products.map(p => `<option value="${p.name}" data-rate="${p.standardRate}">${p.name} (Ref: ₹${p.standardRate})</option>`).join('');
+      sel.innerHTML = products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
       
-      document.getElementById("pob-manual-rate").value = products[0] ? products[0].standardRate : "";
+      // RATE FIELD IS KEPT COMPLETELY BLANK / EMPTY (NO PREFILLED VALUE)
+      document.getElementById("pob-manual-rate").value = "";
       document.getElementById("pob-qty").value = "";
       document.getElementById("pob-total-amount").value = "";
       document.getElementById("pob-cash-received").value = "";
@@ -963,10 +1077,16 @@
       document.getElementById("pob-modal-dialog").style.display = "none"; 
     }
 
+    // MULTIPLY MANUAL RATE * QUANTITY TO AUTO-FILL TOTAL POB
     function calculateCustomPOB() {
       const r = parseFloat(document.getElementById("pob-manual-rate").value) || 0;
       const q = parseFloat(document.getElementById("pob-qty").value) || 0;
-      document.getElementById("pob-total-amount").value = (r * q) || "";
+      
+      if (r && q) {
+        document.getElementById("pob-total-amount").value = (r * q);
+      } else {
+        document.getElementById("pob-total-amount").value = "";
+      }
     }
 
     function confirmPOBAndCash() {
@@ -974,7 +1094,7 @@
       const pobAmount = parseFloat(document.getElementById("pob-total-amount").value) || 0;
       const cashReceived = parseFloat(document.getElementById("pob-cash-received").value) || 0;
       
-      if (!pobAmount && !cashReceived) return alert("Please enter POB Amount or Cash Received!");
+      if (!pobAmount && !cashReceived) return alert("Please enter Rate & Quantity or Cash Received!");
 
       const now = new Date();
       const currentTimestamp = now.getTime();
