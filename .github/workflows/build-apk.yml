@@ -24,7 +24,7 @@ jobs:
       - name: Install ImageMagick for Icon Resizing
         run: sudo apt-get update && sudo apt-get install -y imagemagick
 
-      - name: Build Android Project with Field Rx Branding & Custom Icon
+      - name: Build Android Project with Field Rx Branding & Centered Square Icon
         run: |
           mkdir app-build && cd app-build
           npm init -y
@@ -54,30 +54,33 @@ jobs:
 
           npx cap add android
 
-          # FORCE REPLACE ANDROID APP ICONS ACROSS ALL RESOLUTIONS
+          # SQUARE PADDED LAUNCHER ICON (NO STRETCH / PERFECT SHAPE)
           if [ -f "../icon.png" ]; then
-            echo "Custom icon found! Generating mipmap icons..."
+            echo "Custom icon found! Generating square fitted mipmap icons..."
             RES_DIR="android/app/src/main/res"
 
-            convert ../icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher.png
-            convert ../icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_round.png
-            convert ../icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_foreground.png
+            # Create square canvas with center fit
+            convert ../icon.png -background "#0b1329" -gravity center -resize 512x512 -extent 512x512 square_icon.png
 
-            convert ../icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher.png
-            convert ../icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_round.png
-            convert ../icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_foreground.png
+            convert square_icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher.png
+            convert square_icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_round.png
+            convert square_icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_foreground.png
 
-            convert ../icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher.png
-            convert ../icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_round.png
-            convert ../icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png
+            convert square_icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher.png
+            convert square_icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_round.png
+            convert square_icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_foreground.png
 
-            convert ../icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher.png
-            convert ../icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_round.png
-            convert ../icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png
+            convert square_icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher.png
+            convert square_icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_round.png
+            convert square_icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png
 
-            convert ../icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher.png
-            convert ../icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png
-            convert ../icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png
+            convert square_icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher.png
+            convert square_icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_round.png
+            convert square_icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png
+
+            convert square_icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher.png
+            convert square_icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png
+            convert square_icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png
           fi
 
           npx cap sync android
