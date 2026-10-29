@@ -26,6 +26,8 @@
       --card: #ffffff; 
       --border-dark: #334155; 
       --text: #0f172a; 
+      --wa-green: #25D366;
+      --wa-dark: #075E54;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
     body { background: #cbd5e1; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
@@ -39,6 +41,20 @@
     
     .session-info-bar { background: #e0f2fe; padding: 6px 14px; font-size: 10.5px; font-weight: 700; color: #0284c7; display: flex; justify-content: space-between; border-bottom: 1px solid #bae6fd; }
     .dashboard-body { padding: 10px 12px 40px 12px; flex: 1; overflow-y: auto; }
+
+    .geofence-radar-badge {
+      background: #eff6ff;
+      border: 1px dashed #0284c7;
+      border-radius: 8px;
+      padding: 6px 10px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #0369a1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
     .active-belt-banner {
       background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #172554 100%);
@@ -78,6 +94,17 @@
       background: #ffffff;
       border-color: #2563eb;
       border-left: 5px solid #2563eb;
+    }
+    .doctor-item.in-geofence {
+      border-color: #f59e0b;
+      background: #fffbeb;
+      border-left: 5px solid #f59e0b;
+      animation: pulseBorder 1.5s infinite;
+    }
+    @keyframes pulseBorder {
+      0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
     }
     .doctor-item.visit-completed { 
       border-color: #059669; 
@@ -131,12 +158,12 @@
     .btn-main { width: 100%; padding: 8.5px 10px; border: 1.5px solid transparent; border-radius: 7px; font-size: 11.8px; font-weight: 800; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .btn-blue { background: #0284c7; border-color: #0369a1; }
     .btn-green { background: #10b981; border-color: #047857; }
+    .btn-wa { background: #25D366; border-color: #128C7E; color: white; }
 
     .drawer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(3px); z-index: 400; display: none; }
     .side-drawer { position: fixed; top: 0; right: -360px; width: 86%; max-width: 350px; height: 100%; background: #f8fafc; z-index: 500; overflow-y: auto; padding: 14px 12px; box-shadow: -5px 0 25px rgba(0,0,0,0.3); transition: right 0.28s ease-in-out; border-left: 2px solid var(--navy); }
     .side-drawer.drawer-open { right: 0; }
 
-    /* MODERN STYLISH BOTTOM SHEET */
     .sheet-picker-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); z-index: 700; display: none; align-items: flex-end; justify-content: center; }
     .sheet-picker-modal { background: #ffffff; width: 100%; max-width: 440px; max-height: 72vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; animation: slideUp 0.22s ease-out; box-shadow: 0 -10px 30px rgba(0,0,0,0.3); }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -159,15 +186,89 @@
     .sheet-item-card.selected { border-color: #0284c7; background: #eff6ff; }
 
     .popup-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); z-index: 600; display: none; align-items: center; justify-content: center; padding: 14px; }
-    .popup-modal-content { background: white; border-radius: 12px; width: 100%; max-width: 400px; padding: 16px; border: 2px solid var(--border-dark); }
+    .popup-modal-content { background: white; border-radius: 14px; width: 100%; max-width: 420px; padding: 16px; border: 2px solid var(--border-dark); max-height: 90vh; overflow-y: auto; }
     #collections-dropdown-panel { display: none; background: #0b1329; border-bottom: 2px solid #334155; padding: 10px 12px; color: white; }
 
     #mr-login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #0b1329 0%, #172554 100%); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 18px; }
     .login-card { background: #ffffff; width: 100%; max-width: 360px; border-radius: 16px; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1.5px solid #cbd5e1; }
     .pin-input-field { letter-spacing: 12px; font-size: 22px; font-weight: 800; text-align: center; padding: 10px; border: 2px solid #94a3b8; border-radius: 8px; width: 100%; margin-bottom: 12px; outline: none; background: #f8fafc; }
+
+    /* WHATSAPP VOICE NODE POPUP */
+    .wa-chat-box {
+      background: #ece5dd;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      min-height: 70px;
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 12px;
+      position: relative;
+    }
+    .wa-bubble {
+      background: #dcf8c6;
+      padding: 7px 10px;
+      border-radius: 7.5px;
+      max-width: 88%;
+      margin-left: auto;
+      font-size: 11.5px;
+      color: #0f172a;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+      margin-bottom: 4px;
+    }
+    .wa-mic-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--wa-green);
+      border: none;
+      color: white;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(37, 211, 102, 0.4);
+      transition: transform 0.15s ease;
+    }
+    .wa-mic-btn.recording {
+      background: #ef4444 !important;
+      animation: recordPulse 1s infinite alternate;
+    }
+    @keyframes recordPulse {
+      from { transform: scale(1); box-shadow: 0 0 10px rgba(239, 68, 68, 0.7); }
+      to { transform: scale(1.15); box-shadow: 0 0 18px rgba(239, 68, 68, 0.9); }
+    }
+
+    .parsed-item-tag {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .net-offline-alert {
+      background: #ef4444;
+      color: white;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 4px 10px;
+      text-align: center;
+      display: none;
+    }
   </style>
 </head>
 <body>
+
+  <!-- OFFLINE WARNING STRIP -->
+  <div id="offline-status-banner" class="net-offline-alert">
+    <i class="fa-solid fa-triangle-exclamation"></i> Offline / Signal Lost: Offline logs are active & owner will be notified upon reconnect!
+  </div>
 
   <!-- LOGIN SCREEN -->
   <div id="mr-login-screen">
@@ -257,6 +358,12 @@
 
     <!-- HOME PAGE -->
     <div class="dashboard-body">
+      <!-- 50M GEOFENCE RADAR BAR -->
+      <div class="geofence-radar-badge" id="geofence-radar-box">
+        <span><i class="fa-solid fa-bullseye"></i> Geofence Radar: <b id="lbl-radar-status">Idle (Punch In to Scan)</b></span>
+        <span id="lbl-radar-timer" style="font-weight:800; color:#d97706;"></span>
+      </div>
+
       <div class="active-belt-banner">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <div style="font-size:10.5px; font-weight:900; color:#38bdf8; text-transform:uppercase; letter-spacing:0.5px;">
@@ -288,7 +395,7 @@
         <button onclick="closeSideDrawer()" style="background:#fee2e2; border:none; width:26px; height:26px; border-radius:50%; color:red; font-weight:900; cursor:pointer;">&times;</button>
       </div>
 
-      <!-- CREATE BELT WITH HYBRID RESCHEDULE -->
+      <!-- CREATE BELT -->
       <div style="background:linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border:2px solid #eab308; border-radius:10px; padding:10px; margin-bottom:12px;">
         <div style="font-size:12px; font-weight:900; color:#854d0e; margin-bottom:7px; text-transform:uppercase;">
           <i class="fa-solid fa-route"></i> Create Route / Belt
@@ -304,16 +411,15 @@
         </div>
         <input type="hidden" id="new-belt-day" value="Monday">
 
-        <!-- HYBRID SMART RESCHEDULE CARD (MOVE TO FREE OR SWAP) -->
         <div id="day-engagement-status" style="display:none; font-size:11px; font-weight:700; color:#991b1b; background:#fee2e2; border:1.5px solid #f87171; border-radius:8px; padding:8px 9px; margin-bottom:7px;">
           <div><i class="fa-solid fa-circle-exclamation"></i> Already assigned to: <b id="engaged-belt-name"></b></div>
           
           <div style="margin-top:6px; display:flex; gap:6px;">
-            <button type="button" onclick="openFreeDaysShiftPicker()" style="flex:1; background:#15803d; color:white; border:none; padding:5px 6px; border-radius:5px; font-size:10px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;">
-              <i class="fa-solid fa-arrow-right-arrow-left"></i> Shift to Free Day
+            <button type="button" onclick="openFreeDaysShiftPicker()" style="flex:1; background:#15803d; color:white; border:none; padding:5px 6px; border-radius:5px; font-size:10px; font-weight:800; cursor:pointer;">
+              Shift to Free Day
             </button>
-            <button type="button" onclick="openRouteSwapPicker()" style="flex:1; background:#0369a1; color:white; border:none; padding:5px 6px; border-radius:5px; font-size:10px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;">
-              <i class="fa-solid fa-repeat"></i> Swap Routes
+            <button type="button" onclick="openRouteSwapPicker()" style="flex:1; background:#0369a1; color:white; border:none; padding:5px 6px; border-radius:5px; font-size:10px; font-weight:800; cursor:pointer;">
+              Swap Routes
             </button>
           </div>
         </div>
@@ -368,30 +474,73 @@
       </div>
     </div>
 
-    <!-- POB POPUP -->
+    <!-- POB & CASH MODAL (WITH WHATSAPP VOICE & MULTI-PRODUCT SUPPORT) -->
     <div id="pob-modal-dialog" class="popup-modal-overlay">
       <div class="popup-modal-content" style="border: 2px solid var(--emerald-dark);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <div>
             <b style="font-size:14.5px; color:#15803d;" id="selected-doc-display">Doctor Name</b>
             <div style="font-size:10px; color:#64748b;" id="selected-doc-subline">Clinic Visit Entry</div>
           </div>
           <button onclick="closePOBBox()" style="background:#fee2e2; border:none; width:26px; height:26px; border-radius:50%; color:red; font-weight:900; cursor:pointer;">&times;</button>
         </div>
-        
-        <div id="pob-item-trigger" class="custom-select-trigger" onclick="openProductPicker()" style="margin-bottom:8px; border-color:#cbd5e1;">
-          <span id="pob-item-label" style="font-size:12px;">Select Product</span>
-          <i class="fa-solid fa-chevron-down" style="font-size:10px; color:#64748b;"></i>
-        </div>
-        <input type="hidden" id="pob-item-name">
 
-        <div style="display:flex; gap:6px;">
-          <input type="number" id="pob-manual-rate" class="text-input" placeholder="Rate (₹)" oninput="calculateCustomPOB()">
-          <input type="number" id="pob-qty" class="text-input" placeholder="Quantity" oninput="calculateCustomPOB()">
+        <!-- WHATSAPP VOICE NODE -->
+        <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:8px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span style="font-size:11px; font-weight:800; color:#15803d;"><i class="fa-brands fa-whatsapp" style="color:#25d366; font-size:13px;"></i> WhatsApp Voice Entry</span>
+            <span id="voice-indicator" style="font-size:10px; color:#64748b; font-weight:700;">Mic Idle</span>
+          </div>
+
+          <div class="wa-chat-box" id="wa-chat-bubble-box">
+            <div class="wa-bubble" id="wa-speech-display">
+              🎙️ <i>Hold or Tap Mic and speak (e.g. "10 pc Valzyme rate 120 and 500 cash")...</i>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+            <button class="wa-mic-btn" id="btn-wa-mic" onclick="toggleVoiceRecognition()" title="Voice to POB & Cash">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+          </div>
         </div>
 
-        <input type="number" id="pob-total-amount" class="text-input" placeholder="Total POB (₹)" style="background:#f0fdf4; font-weight:800; color:#15803d;">
-        <input type="number" id="pob-cash-received" class="text-input" placeholder="Cash Received (₹)" style="background:#fffbeb; border-color:#f59e0b; font-weight:800; color:#b45309;">
+        <!-- MULTI PRODUCT LIST TABLE -->
+        <div style="font-size:11px; font-weight:800; color:#0f172a; margin-bottom:4px; display:flex; justify-content:space-between;">
+          <span>Items to Book:</span>
+          <span id="lbl-item-count" style="color:#0284c7;">0 Items</span>
+        </div>
+        <div id="pob-items-container" style="max-height:100px; overflow-y:auto; margin-bottom:8px;"></div>
+
+        <!-- MANUAL ENTRY ACCORDION -->
+        <div style="background:#f8fafc; border:1.2px solid #cbd5e1; border-radius:8px; padding:7px; margin-bottom:8px;">
+          <div style="font-size:11px; font-weight:800; color:#334155; margin-bottom:5px;">Manual Product Add:</div>
+          
+          <div id="pob-item-trigger" class="custom-select-trigger" onclick="openProductPicker()" style="margin-bottom:6px; border-color:#cbd5e1; padding:6px 9px;">
+            <span id="pob-item-label" style="font-size:11.5px;">Select Product</span>
+            <i class="fa-solid fa-chevron-down" style="font-size:9px; color:#64748b;"></i>
+          </div>
+          <input type="hidden" id="pob-item-name">
+
+          <div style="display:flex; gap:6px;">
+            <input type="number" id="pob-manual-rate" class="text-input" placeholder="Rate (₹)" style="margin-bottom:4px;">
+            <input type="number" id="pob-qty" class="text-input" placeholder="Quantity" style="margin-bottom:4px;">
+            <button type="button" class="btn-main btn-blue" onclick="manualAddProductRow()" style="width: auto; padding: 6px 12px; height: 33px;">
+              <i class="fa-solid fa-plus"></i> Add
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <div style="flex:1;">
+            <label style="font-size:9.5px; font-weight:800; color:#15803d;">TOTAL POB (₹)</label>
+            <input type="number" id="pob-total-amount" class="text-input" readonly placeholder="0" style="background:#f0fdf4; font-weight:800; color:#15803d; margin-bottom:0;">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:9.5px; font-weight:800; color:#b45309;">CASH RECEIVED (₹)</label>
+            <input type="number" id="pob-cash-received" class="text-input" placeholder="Cash (₹)" style="background:#fffbeb; border-color:#f59e0b; font-weight:800; color:#b45309; margin-bottom:0;">
+          </div>
+        </div>
         
         <button class="btn-main btn-green" onclick="confirmPOBAndCash()" style="padding:10px; font-size:12.5px;">
           <i class="fa-solid fa-check"></i> Submit POB & Cash
@@ -423,21 +572,23 @@
     let capturedDocLat = null, capturedDocLng = null;
     let selectedDoctorForPOB = null;
     let selectedDoctorLocation = {};
-    let foregroundLiveWatchId = null;
+    
+    // MULTI-ITEM POB LIST
+    let currentPOBItemsList = [];
+
+    // GEOFENCING CONSTANTS & STATE
+    const GEOFENCE_RADIUS_METERS = 50;
+    const REQUIRED_DWELL_SECONDS = 180; // 3 Minutes
+    let activeGeofenceTracker = null; // { doctorName, beltId, origIdx, entryTime, docLat, docLng, area }
+    let geofenceIntervalCheck = null;
+
+    // 35 MINUTES PING INTERVAL
+    let ping35MinInterval = null;
+    const PING_INTERVAL_MS = 35 * 60 * 1000; // 35 minutes
 
     const CYCLE_DAYS_12 = [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "2nd Monday",
-      "2nd Tuesday",
-      "2nd Wednesday",
-      "2nd Thursday",
-      "2nd Friday",
-      "2nd Saturday"
+      "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+      "2nd Monday", "2nd Tuesday", "2nd Wednesday", "2nd Thursday", "2nd Friday", "2nd Saturday"
     ];
 
     function openSideDrawer() {
@@ -454,11 +605,6 @@
       const p = document.getElementById("collections-dropdown-panel");
       p.style.display = (p.style.display === "block") ? "none" : "block";
     }
-
-    // -------------------------------------------------------------
-    // STYLISH BOTTOM SHEET PICKER SYSTEM
-    // -------------------------------------------------------------
-    let currentPickerCallback = null;
 
     function openSheetPicker(title, items, selectedVal, onSelect) {
       document.getElementById("sheet-modal-title").innerText = title;
@@ -543,32 +689,28 @@
       const products = window.currentProducts || [];
       const items = products.map(p => ({
         value: p.name,
-        label: p.name,
+        label: `${p.name} (₹${p.standardRate || 0})`,
         icon: "fa-solid fa-capsules"
       }));
       const cur = document.getElementById("pob-item-name").value;
       openSheetPicker("Select Product", items, cur, val => {
         document.getElementById("pob-item-name").value = val;
         document.getElementById("pob-item-label").innerText = val;
-        calculateCustomPOB();
+        const found = products.find(p => p.name === val);
+        if (found && found.standardRate) {
+          document.getElementById("pob-manual-rate").value = found.standardRate;
+        }
       });
     }
 
-    // -------------------------------------------------------------
-    // HYBRID RESCHEDULE ENGINE (MOVE TO FREE DAY OR AUTO SWAP)
-    // -------------------------------------------------------------
-    
-    // 1. Move to Free Day Picker
     function openFreeDaysShiftPicker() {
       if (!window.activeConflictBelt) return;
       const b = window.activeConflictBelt;
       const belts = window.currentBelts || [];
-
-      // Find free days only
       const freeDays = CYCLE_DAYS_12.filter(d => !belts.some(belt => belt.day === d));
 
       if (freeDays.length === 0) {
-        return alert("All 12 days are fully engaged! Use 'Swap Routes' to exchange with another route.");
+        return alert("All 12 days are fully engaged!");
       }
 
       const items = freeDays.map(d => ({
@@ -589,18 +731,13 @@
       });
     }
 
-    // 2. Auto Swap Picker
     function openRouteSwapPicker() {
       if (!window.activeConflictBelt) return;
       const currentBelt = window.activeConflictBelt;
       const belts = window.currentBelts || [];
-
-      // Find other belts that have different days
       const otherBelts = belts.filter(x => x.id !== currentBelt.id);
 
-      if (otherBelts.length === 0) {
-        return alert("No other route exists to swap with!");
-      }
+      if (otherBelts.length === 0) return alert("No other route exists to swap with!");
 
       const items = otherBelts.map(x => ({
         value: x.id,
@@ -618,13 +755,12 @@
         const day1 = currentBelt.day;
         const day2 = targetBelt.day;
 
-        // Perform atomic swap
         const updates = {};
         updates["belts/" + currentBelt.id + "/day"] = day2;
         updates["belts/" + targetBelt.id + "/day"] = day1;
 
         db.ref().update(updates).then(() => {
-          alert(`Routes Swapped Successfully!\n• "${currentBelt.name}" is now on ${day2}\n• "${targetBelt.name}" is now on ${day1}`);
+          alert(`Routes Swapped Successfully!`);
           checkSelectedDayStatus();
           renderBeltDropdown();
         });
@@ -685,14 +821,8 @@
       const enteredPin = document.getElementById("login-pin-input").value.trim();
       const errorEl = document.getElementById("login-error-msg");
 
-      if (!selectedName) {
-        errorEl.innerText = "Please select staff member!";
-        errorEl.style.display = "block";
-        return;
-      }
-
-      if (!enteredPin || enteredPin.length !== 4) {
-        errorEl.innerText = "Please enter 4-digit PIN!";
+      if (!selectedName || !enteredPin) {
+        errorEl.innerText = "Please select staff and enter PIN!";
         errorEl.style.display = "block";
         return;
       }
@@ -712,19 +842,17 @@
         updateMRCashDisplay();
         loadBeltDoctors();
       } else {
-        errorEl.innerText = "Invalid PIN! Please check and enter again.";
+        errorEl.innerText = "Invalid PIN! Please try again.";
         errorEl.style.display = "block";
       }
     }
 
     function logoutMR() {
-      const confirmLogout = confirm("Do you want to log out?");
-      if (!confirmLogout) return;
-
+      if (!confirm("Do you want to log out?")) return;
+      stopGeofenceScanAndPing();
       localStorage.removeItem("valchem_active_mr");
       activeMR = "";
       document.getElementById("login-pin-input").value = "";
-      document.getElementById("login-error-msg").style.display = "none";
       document.getElementById("mr-login-screen").style.display = "flex";
       closeSideDrawer();
     }
@@ -765,6 +893,392 @@
       return Math.round(R * c);
     }
 
+    // -------------------------------------------------------------
+    // FEATURE 1: AUTOMATIC 50M GEOFENCING + 3-MINUTES DWELL TIMER
+    // -------------------------------------------------------------
+    function startGeofenceRadarEngine() {
+      if (geofenceIntervalCheck) clearInterval(geofenceIntervalCheck);
+      
+      geofenceIntervalCheck = setInterval(() => {
+        if (!punchedIn || !activeMR) return;
+
+        navigator.geolocation.getCurrentPosition(pos => {
+          const mrLat = pos.coords.latitude;
+          const mrLng = pos.coords.longitude;
+          evaluateGeofenceForDoctors(mrLat, mrLng);
+        }, err => {
+          document.getElementById("lbl-radar-status").innerText = "GPS Offline/Weak";
+        }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 });
+      }, 7000); // Check every 7 seconds
+    }
+
+    function evaluateGeofenceForDoctors(mrLat, mrLng) {
+      const beltId = document.getElementById("active-belt-dropdown").value;
+      const belts = window.currentBelts || [];
+      const b = belts.find(x => x.id === beltId);
+      if (!b || !b.doctors || b.doctors.length === 0) return;
+
+      const today = getTodayDateString();
+      let matchedDoctor = null;
+
+      for (let idx = 0; idx < b.doctors.length; idx++) {
+        const doc = b.doctors[idx];
+        const isTodayDone = (doc.lastCallDate === today && Boolean(doc.callCompletedTime));
+        if (isTodayDone) continue;
+
+        const distance = calculateDistanceInMeters(doc.lat, doc.lng, mrLat, mrLng);
+
+        if (distance <= GEOFENCE_RADIUS_METERS) {
+          matchedDoctor = { doc, idx, distance };
+          break;
+        }
+      }
+
+      const radarStatus = document.getElementById("lbl-radar-status");
+      const radarTimer = document.getElementById("lbl-radar-timer");
+
+      if (matchedDoctor) {
+        // Inside Geofence (<= 50m)
+        if (!activeGeofenceTracker || activeGeofenceTracker.doctorName !== matchedDoctor.doc.name) {
+          activeGeofenceTracker = {
+            doctorName: matchedDoctor.doc.name,
+            beltId: beltId,
+            origIdx: matchedDoctor.idx,
+            entryTime: Date.now(),
+            docLat: matchedDoctor.doc.lat,
+            docLng: matchedDoctor.doc.lng,
+            area: matchedDoctor.doc.area
+          };
+          highlightGeofenceCard(matchedDoctor.idx, true);
+        }
+
+        const elapsedSeconds = Math.floor((Date.now() - activeGeofenceTracker.entryTime) / 1000);
+        const remainingSeconds = Math.max(0, REQUIRED_DWELL_SECONDS - elapsedSeconds);
+        const remMins = Math.floor(remainingSeconds / 60);
+        const remSecs = remainingSeconds % 60;
+
+        radarStatus.innerHTML = `<span style="color:#15803d;"><i class="fa-solid fa-location-dot"></i> At Dr. ${matchedDoctor.doc.name} (${matchedDoctor.distance}m)</span>`;
+        radarTimer.innerText = `Auto Check-in in: ${remMins}:${remSecs < 10 ? '0' + remSecs : remSecs}`;
+
+        if (elapsedSeconds >= REQUIRED_DWELL_SECONDS) {
+          // 3 MINUTES COMPLETED! AUTOMATICALLY MARK CALL
+          autoTriggerVerifiedDoctorCall(activeGeofenceTracker);
+          activeGeofenceTracker = null;
+          radarTimer.innerText = "Completed!";
+        }
+      } else {
+        // Outside Geofence
+        if (activeGeofenceTracker) {
+          highlightGeofenceCard(activeGeofenceTracker.origIdx, false);
+          activeGeofenceTracker = null;
+        }
+        radarStatus.innerText = "Scanning nearby doctors (50m radius)...";
+        radarTimer.innerText = "";
+      }
+    }
+
+    function highlightGeofenceCard(idx, inRange) {
+      const cards = document.querySelectorAll(".doctor-item");
+      cards.forEach(c => c.classList.remove("in-geofence"));
+      const targetCard = document.getElementById(`doc-card-${idx}`);
+      if (targetCard && inRange) {
+        targetCard.classList.add("in-geofence");
+      }
+    }
+
+    function autoTriggerVerifiedDoctorCall(tracker) {
+      saveCallTransaction(
+        tracker.origIdx,
+        tracker.doctorName,
+        tracker.docLat,
+        tracker.docLng,
+        tracker.area,
+        tracker.docLat,
+        tracker.docLng,
+        25, // Inside verified 50m
+        true
+      );
+
+      sendOwnerNotification(
+        "Auto Geofence Call Verified",
+        `⚡ ${activeMR} completed 3-minute dwell at Dr. ${tracker.doctorName} clinic. Auto-verified!`,
+        "auto_geofence_verified",
+        "green",
+        { doctor: tracker.doctorName, dwellSeconds: 180 }
+      );
+
+      alert(`✅ Verified Call Marked Automatically!\nDr. ${tracker.doctorName} (3 minutes dwell completed)`);
+    }
+
+    // -------------------------------------------------------------
+    // FEATURE 4: 35-MINUTE BACKGROUND LOCATION PING TO OWNER
+    // -------------------------------------------------------------
+    function start35MinLocationPing() {
+      if (ping35MinInterval) clearInterval(ping35MinInterval);
+      
+      // Immediate ping once after punch in
+      sendPeriodicLocationPing();
+
+      ping35MinInterval = setInterval(() => {
+        if (punchedIn && activeMR) {
+          sendPeriodicLocationPing();
+        }
+      }, PING_INTERVAL_MS);
+    }
+
+    function sendPeriodicLocationPing() {
+      if (!navigator.geolocation) return;
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const now = new Date();
+        const timeStr = formatTime12Hour(now);
+
+        const mrKey = activeMR.replace(/\s+/g, '_');
+        db.ref(`mr_pings/${mrKey}`).set({
+          mrName: activeMR,
+          lat: lat,
+          lng: lng,
+          lastPingTime: timeStr,
+          timestamp: now.getTime(),
+          dateStr: getTodayDateString()
+        });
+
+        sendOwnerNotification(
+          "35-Min Field Ping",
+          `📍 ${activeMR} location ping at ${timeStr}`,
+          "routine_ping",
+          "blue",
+          { lat: lat, lng: lng }
+        );
+      }, err => {
+        console.warn("Ping location fetch error", err);
+      }, { enableHighAccuracy: true, timeout: 6000 });
+    }
+
+    function stopGeofenceScanAndPing() {
+      if (geofenceIntervalCheck) clearInterval(geofenceIntervalCheck);
+      if (ping35MinInterval) clearInterval(ping35MinInterval);
+      document.getElementById("lbl-radar-status").innerText = "Idle (Punch In to Scan)";
+      document.getElementById("lbl-radar-timer").innerText = "";
+    }
+
+    // -------------------------------------------------------------
+    // FEATURE 3: NETWORK CUT / SIGNAL LOSS OWNER DETECTION
+    // -------------------------------------------------------------
+    let offlineStartTime = null;
+
+    window.addEventListener('offline', () => {
+      offlineStartTime = Date.now();
+      document.getElementById("offline-status-banner").style.display = "block";
+      localStorage.setItem('valchem_last_offline_time', offlineStartTime);
+    });
+
+    window.addEventListener('online', () => {
+      document.getElementById("offline-status-banner").style.display = "none";
+      const storedDisconnect = localStorage.getItem('valchem_last_offline_time') || offlineStartTime;
+      
+      if (storedDisconnect && activeMR) {
+        const disconnectedMs = Date.now() - parseInt(storedDisconnect, 10);
+        const disconnectMins = Math.round(disconnectedMs / (1000 * 60));
+        const offlineTimeStr = formatTime12Hour(new Date(parseInt(storedDisconnect, 10)));
+        const reconnectTimeStr = formatTime12Hour(new Date());
+
+        // Notify Owner that net was turned off / lost
+        sendOwnerNotification(
+          "⚠️ Signal Loss / Net Off Alert",
+          `${activeMR}'s phone went offline at ${offlineTimeStr} & returned at ${reconnectTimeStr} (${disconnectMins} min outage)`,
+          "network_tamper_alert",
+          "red",
+          { durationMinutes: disconnectMins, offlineTime: offlineTimeStr, reconnectTime: reconnectTimeStr }
+        );
+
+        localStorage.removeItem('valchem_last_offline_time');
+        offlineStartTime = null;
+      }
+    });
+
+    // Monitor Firebase Connection directly
+    db.ref(".info/connected").on("value", snap => {
+      if (snap.val() === false && punchedIn) {
+        if (!offlineStartTime) offlineStartTime = Date.now();
+      }
+    });
+
+    // -------------------------------------------------------------
+    // FEATURE 2: WHATSAPP-STYLE VOICE ENTRY FOR MULTI POB & CASH
+    // -------------------------------------------------------------
+    let speechRecognitionInstance = null;
+    let isSpeechRecording = false;
+
+    function toggleVoiceRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        return alert("Speech Recognition not supported in this browser. Please use Chrome/Edge or manual entry.");
+      }
+
+      const micBtn = document.getElementById("btn-wa-mic");
+      const indicator = document.getElementById("voice-indicator");
+      const speechDisplay = document.getElementById("wa-speech-display");
+
+      if (isSpeechRecording) {
+        if (speechRecognitionInstance) speechRecognitionInstance.stop();
+        return;
+      }
+
+      speechRecognitionInstance = new SpeechRecognition();
+      speechRecognitionInstance.lang = 'hi-IN'; // Recognizes Hindi + English mix
+      speechRecognitionInstance.interimResults = true;
+      speechRecognitionInstance.continuous = false;
+
+      speechRecognitionInstance.onstart = () => {
+        isSpeechRecording = true;
+        micBtn.classList.add("recording");
+        indicator.innerText = "Listening...";
+        speechDisplay.innerHTML = `<i>Listening... Bolna shuru kijiye...</i>`;
+      };
+
+      speechRecognitionInstance.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        speechDisplay.innerText = transcript;
+        
+        // Auto parse when finished speaking
+        if (event.results[0].isFinal) {
+          parseVoiceTranscript(transcript);
+        }
+      };
+
+      speechRecognitionInstance.onerror = (e) => {
+        console.error("Speech Error:", e);
+        indicator.innerText = "Mic Error/Stopped";
+        micBtn.classList.remove("recording");
+        isSpeechRecording = false;
+      };
+
+      speechRecognitionInstance.onend = () => {
+        micBtn.classList.remove("recording");
+        indicator.innerText = "Processed";
+        isSpeechRecording = false;
+      };
+
+      speechRecognitionInstance.start();
+    }
+
+    // Voice Parser for multiple products and cash
+    function parseVoiceTranscript(rawText) {
+      const text = rawText.toLowerCase();
+      const allProducts = window.currentProducts || [];
+
+      // 1. EXTRACT CASH
+      let extractedCash = 0;
+      const cashMatch = text.match(/(?:cash|rokad|nagad|rupya|rupaye|rs|inr)[\s:]*([0-9]+)/i) || 
+                        text.match(/([0-9]+)[\s]*(?:cash|rokad|nagad|rupya)/i);
+      if (cashMatch) {
+        extractedCash = parseFloat(cashMatch[1]) || 0;
+        document.getElementById("pob-cash-received").value = extractedCash;
+      }
+
+      // 2. PARSE MULTIPLE PRODUCTS
+      // Normalize common synonyms
+      let cleanText = text
+        .replace(/pece|pcs|pc|shishi|bottle|dibba|packet/g, " pc ")
+        .replace(/rate|bhav|ke bhav/g, " rate ");
+
+      // Match patterns like: "10 pc valzyme rate 120" or "5 valzyme"
+      allProducts.forEach(prod => {
+        const prodNameKeyword = prod.name.split(" ")[0].toLowerCase(); // e.g. 'valzyme', 'valcef-o', 'fericit'
+        
+        if (cleanText.includes(prodNameKeyword)) {
+          // Regex to capture qty near product keyword
+          const regexPattern = new RegExp(`([0-9]+)\\s*(?:pc|pcs)?\\s*${prodNameKeyword}(?:\\s*(?:rate|bhav)\\s*([0-9]+))?`, "i");
+          const match = cleanText.match(regexPattern);
+
+          let qty = 1;
+          let rate = prod.standardRate || 100;
+
+          if (match) {
+            qty = parseInt(match[1], 10) || 1;
+            if (match[2]) {
+              rate = parseFloat(match[2]) || rate;
+            }
+          }
+
+          // Check if already in list
+          const existingIdx = currentPOBItemsList.findIndex(item => item.product.toLowerCase().includes(prodNameKeyword));
+          if (existingIdx >= 0) {
+            currentPOBItemsList[existingIdx].qty = qty;
+            currentPOBItemsList[existingIdx].rate = rate;
+            currentPOBItemsList[existingIdx].amount = qty * rate;
+          } else {
+            currentPOBItemsList.push({
+              product: prod.name,
+              qty: qty,
+              rate: rate,
+              amount: qty * rate
+            });
+          }
+        }
+      });
+
+      renderPOBItemsList();
+    }
+
+    function manualAddProductRow() {
+      const prodName = document.getElementById("pob-item-name").value;
+      const rate = parseFloat(document.getElementById("pob-manual-rate").value) || 0;
+      const qty = parseFloat(document.getElementById("pob-qty").value) || 0;
+
+      if (!prodName || !qty || !rate) {
+        return alert("Please select Product, Rate and Quantity!");
+      }
+
+      currentPOBItemsList.push({
+        product: prodName,
+        qty: qty,
+        rate: rate,
+        amount: qty * rate
+      });
+
+      document.getElementById("pob-qty").value = "";
+      renderPOBItemsList();
+    }
+
+    function removePOBItemRow(idx) {
+      currentPOBItemsList.splice(idx, 1);
+      renderPOBItemsList();
+    }
+
+    function renderPOBItemsList() {
+      const container = document.getElementById("pob-items-container");
+      let grandTotal = 0;
+
+      if (currentPOBItemsList.length === 0) {
+        container.innerHTML = `<div style="font-size:10.5px; color:#94a3b8; text-align:center; padding:6px;">No products added yet.</div>`;
+        document.getElementById("pob-total-amount").value = 0;
+        document.getElementById("lbl-item-count").innerText = "0 Items";
+        return;
+      }
+
+      container.innerHTML = currentPOBItemsList.map((item, idx) => {
+        grandTotal += item.amount;
+        return `
+          <div class="parsed-item-tag">
+            <div>
+              <b style="color:#0f172a;">${item.product}</b>
+              <div style="color:#475569; font-size:10px;">${item.qty} pcs × ₹${item.rate} = <b style="color:#15803d;">₹${item.amount}</b></div>
+            </div>
+            <button onclick="removePOBItemRow(${idx})" style="background:#fee2e2; border:none; color:red; border-radius:50%; width:20px; height:20px; cursor:pointer; font-weight:800;">&times;</button>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById("pob-total-amount").value = grandTotal;
+      document.getElementById("lbl-item-count").innerText = `${currentPOBItemsList.length} Items`;
+    }
+
     function initPersistentPunchState() {
       if (!activeMR) return;
       const savedDate = localStorage.getItem('valchem_punch_date_' + activeMR);
@@ -799,11 +1313,14 @@
         txt.innerText = "Punched In";
         statusEl.innerText = "Active in Field";
         startSessionTimerDisplay();
+        startGeofenceRadarEngine();
+        start35MinLocationPing();
       } else {
         btn.classList.remove("punched-in");
         txt.innerText = "Punch In";
         statusEl.innerText = "Punched Out";
         stopSessionTimerDisplay();
+        stopGeofenceScanAndPing();
       }
     }
 
@@ -829,8 +1346,7 @@
         sendOwnerNotification("Punch In Alert", `${activeMR} started field duty at ${timeStr}`, "punch_in", "green");
         applyPunchUI(true);
       } else {
-        const confirmOut = confirm("Do you want to Punch Out for today?");
-        if (!confirmOut) return;
+        if (!confirm("Do you want to Punch Out for today?")) return;
 
         localStorage.setItem('valchem_punch_status_' + activeMR, 'INACTIVE');
         const mrKey = activeMR.replace(/\s+/g, '_');
@@ -865,13 +1381,9 @@
       const mins = Math.floor((elapsedSec % 3600) / 60);
       const secs = elapsedSec % 60;
 
-      if (hrs > 0) {
-        document.getElementById("lbl-session-timer").innerText = 
-          `${hrs}h ${mins < 10 ? '0' + mins : mins}m ${secs < 10 ? '0' + secs : secs}s`;
-      } else {
-        document.getElementById("lbl-session-timer").innerText = 
-          `${mins < 10 ? '0' + mins : mins}m ${secs < 10 ? '0' + secs : secs}s`;
-      }
+      document.getElementById("lbl-session-timer").innerText = 
+        hrs > 0 ? `${hrs}h ${mins < 10 ? '0' + mins : mins}m ${secs < 10 ? '0' + secs : secs}s` 
+                : `${mins < 10 ? '0' + mins : mins}m ${secs < 10 ? '0' + secs : secs}s`;
     }
 
     function listenToMasterData() {
@@ -899,7 +1411,8 @@
         const val = snapshot.val();
         window.currentProducts = val ? Object.values(val) : [
           { id: "p1", name: "VALZYME Syrup 200ml", standardRate: 120 },
-          { id: "p2", name: "VALCEF-O 200 Tablets", standardRate: 180 }
+          { id: "p2", name: "FERICIT-XT Syrup 200ml", standardRate: 145 },
+          { id: "p3", name: "VALCEF-O 200 Tablets", standardRate: 180 }
         ];
 
         if (window.currentProducts[0] && !document.getElementById("pob-item-name").value) {
@@ -1068,7 +1581,7 @@
         const seqNumber = displayIdx + 1;
 
         return `
-          <div class="doctor-item ${d.isTodayDone ? 'visit-completed' : 'pending-card'}">
+          <div class="doctor-item ${d.isTodayDone ? 'visit-completed' : 'pending-card'}" id="doc-card-${d.originalIndex}">
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
               <div>
                 <div class="doctor-name-text">
@@ -1100,7 +1613,7 @@
               `}
 
               <button class="btn-main btn-green" style="flex:1;" onclick="openPOBBox('${d.name}', ${d.lat}, ${d.lng}, '${d.area}', '${d.callCompletedTime || ''}', ${d.lastCallTimestamp || 0})">
-                <i class="fa-solid fa-cart-shopping"></i> Book POB / Cash
+                <i class="fa-brands fa-whatsapp"></i> Voice POB/Cash
               </button>
             </div>
           </div>
@@ -1127,14 +1640,14 @@
           const mrCurrentLat = pos.coords.latitude;
           const mrCurrentLng = pos.coords.longitude;
           const distMeters = calculateDistanceInMeters(docLat, docLng, mrCurrentLat, mrCurrentLng);
-          const isVerified = distMeters <= 120;
+          const isVerified = distMeters <= GEOFENCE_RADIUS_METERS;
 
           saveCallTransaction(origIdx, name, docLat, docLng, area, mrCurrentLat, mrCurrentLng, distMeters, isVerified);
         },
         err => {
           saveCallTransaction(origIdx, name, docLat, docLng, area, docLat, docLng, 0, false);
         },
-        { enableHighAccuracy: false, timeout: 2500, maximumAge: 60000 }
+        { enableHighAccuracy: true, timeout: 3500, maximumAge: 10000 }
       );
     }
 
@@ -1199,35 +1712,27 @@
       document.getElementById("selected-doc-display").innerText = name;
       document.getElementById("selected-doc-subline").innerText = area || 'Field Clinic';
 
+      // Reset Modal Fields
+      currentPOBItemsList = [];
+      renderPOBItemsList();
       document.getElementById("pob-manual-rate").value = "";
       document.getElementById("pob-qty").value = "";
-      document.getElementById("pob-total-amount").value = "";
       document.getElementById("pob-cash-received").value = "";
+      document.getElementById("wa-speech-display").innerHTML = `🎙️ <i>Hold or Tap Mic and speak (e.g. "10 pc Valzyme aur 10 pc Fericit rate 120 and 500 cash")...</i>`;
 
       document.getElementById("pob-modal-dialog").style.display = "flex";
     }
 
     function closePOBBox() { 
+      if (isSpeechRecording && speechRecognitionInstance) speechRecognitionInstance.stop();
       document.getElementById("pob-modal-dialog").style.display = "none"; 
     }
 
-    function calculateCustomPOB() {
-      const r = parseFloat(document.getElementById("pob-manual-rate").value) || 0;
-      const q = parseFloat(document.getElementById("pob-qty").value) || 0;
-      
-      if (r && q) {
-        document.getElementById("pob-total-amount").value = (r * q);
-      } else {
-        document.getElementById("pob-total-amount").value = "";
-      }
-    }
-
     function confirmPOBAndCash() {
-      const item = document.getElementById("pob-item-name").value;
       const pobAmount = parseFloat(document.getElementById("pob-total-amount").value) || 0;
       const cashReceived = parseFloat(document.getElementById("pob-cash-received").value) || 0;
       
-      if (!pobAmount && !cashReceived) return alert("Please enter Rate & Quantity or Cash Received!");
+      if (!pobAmount && !cashReceived) return alert("Please add at least one product POB or enter Cash Received!");
 
       const now = new Date();
       const currentTimestamp = now.getTime();
@@ -1245,6 +1750,11 @@
         }
       }
 
+      // Summary label for multiple items
+      const summaryItemsStr = currentPOBItemsList.length > 0 
+        ? currentPOBItemsList.map(i => `${i.qty}x ${i.product}`).join(", ") 
+        : "General POB";
+
       const txId = "tx_" + Date.now();
       db.ref("transactions/" + txId).set({
         mrName: activeMR,
@@ -1255,25 +1765,26 @@
         callTime: assignedCallTime,
         dateStr: today,
         timestamp: assignedTimestamp,
-        item: item,
+        item: summaryItemsStr,
+        itemsDetail: currentPOBItemsList,
         pobAmount: pobAmount,
         cashReceived: cashReceived
       });
 
       if (pobAmount > 0) {
         sendOwnerNotification(
-          "POB Booked",
-          `${activeMR} booked ₹${pobAmount} POB for Dr. ${selectedDoctorForPOB} (${item})`,
+          "POB Booked (Multi-Item)",
+          `📦 ${activeMR} booked ₹${pobAmount} POB for Dr. ${selectedDoctorForPOB} [${summaryItemsStr}]`,
           "pob",
           "green",
-          { doctor: selectedDoctorForPOB, pob: pobAmount, product: item }
+          { doctor: selectedDoctorForPOB, pob: pobAmount, items: currentPOBItemsList }
         );
       }
 
       if (cashReceived > 0) {
         sendOwnerNotification(
           "Cash Collected",
-          `${activeMR} collected ₹${cashReceived} cash from Dr. ${selectedDoctorForPOB}`,
+          `💵 ${activeMR} collected ₹${cashReceived} cash from Dr. ${selectedDoctorForPOB}`,
           "cash",
           "amber",
           { doctor: selectedDoctorForPOB, cash: cashReceived }
