@@ -490,7 +490,7 @@
 
         <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:8px; margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <span style="font-size:11px; font-weight:800; color:#15803d;"><i class="fa-brands fa-whatsapp" style="color:#25d366; font-size:13px;"></i> WhatsApp Style Voice Note</span>
+            <span style="font-size:11px; font-weight:800; color:#15803d;"><i class="fa-brands fa-whatsapp" style="color:#25d366; font-size:13px;"></i> Quick Voice Note</span>
             <span id="voice-indicator" style="font-size:10px; color:#64748b; font-weight:700;">Mic Ready</span>
           </div>
 
@@ -638,6 +638,15 @@
       if (e && e.target !== e.currentTarget && e.target.id !== "sheet-picker-container") return;
       document.getElementById("sheet-picker-container").style.display = "none";
       currentPickerCallback = null;
+    }
+
+    function openStaffPicker() {
+      const items = staffDataCache.map(s => ({ value: s.name, label: s.name, icon: "fa-solid fa-user-tie" }));
+      const cur = document.getElementById("login-staff-select").value;
+      openSheetPicker("Select Staff Member", items, cur, val => {
+        document.getElementById("login-staff-select").value = val;
+        document.getElementById("login-staff-label").innerText = val;
+      });
     }
 
     function openBeltPicker() {
@@ -1081,7 +1090,7 @@
     });
 
     // -------------------------------------------------------------
-    // WHATSAPP / TELEGRAM STYLE VOICE NOTE SIMULATOR & PARSER
+    // VOICE NOTE SIMULATOR & PARSER
     // -------------------------------------------------------------
     let mediaRecorder = null;
     let audioChunks = [];
@@ -1127,12 +1136,10 @@
         mediaRecorder.onstop = async () => {
           stream.getTracks().forEach(track => track.stop());
           
-          // Simulated instant WhatsApp/Telegram speech parsing stream for seamless offline/online matching
           indicator.innerText = "Analyzing Note...";
           speechDisplay.innerHTML = `<i>Voice note captured, parsing order...</i>`;
 
           setTimeout(() => {
-            // Mock smart parsing for demonstration or direct browser speech fallback simulation
             simulateSmartVoiceParsing("10 piece valzyme 30 rate 500 cash");
           }, 800);
         };
@@ -1431,7 +1438,10 @@
       const area = document.getElementById("doc-area").value.trim();
       const mobile = document.getElementById("doc-mobile").value.trim();
       const landmark = document.getElementById("doc-landmark").value.trim();
-      if (!beltId || !name || !area) return alert("Enter doctor name and area!");
+      
+      if (!beltId || !name || !area) {
+        return alert("Enter doctor name and area!");
+      }
 
       const belts = window.currentBelts || [];
       const b = belts.find(x => x.id === beltId);
