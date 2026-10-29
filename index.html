@@ -163,7 +163,6 @@
     .side-drawer { position: fixed; top: 0; right: -360px; width: 86%; max-width: 350px; height: 100%; background: #f8fafc; z-index: 500; overflow-y: auto; padding: 14px 12px; box-shadow: -5px 0 25px rgba(0,0,0,0.3); transition: right 0.28s ease-in-out; border-left: 2px solid var(--navy); }
     .side-drawer.drawer-open { right: 0; }
 
-    /* Z-INDEX 10005: LOGIN SCREEN SE BHI UPAR RAHEGA */
     .sheet-picker-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); z-index: 10005; display: none; align-items: flex-end; justify-content: center; }
     .sheet-picker-modal { background: #ffffff; width: 100%; max-width: 440px; max-height: 72vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; animation: slideUp 0.22s ease-out; box-shadow: 0 -10px 30px rgba(0,0,0,0.3); }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -192,6 +191,21 @@
     #mr-login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #0b1329 0%, #172554 100%); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 18px; }
     .login-card { background: #ffffff; width: 100%; max-width: 360px; border-radius: 16px; padding: 22px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1.5px solid #cbd5e1; }
     .pin-input-field { letter-spacing: 12px; font-size: 22px; font-weight: 800; text-align: center; padding: 10px; border: 2px solid #94a3b8; border-radius: 8px; width: 100%; margin-bottom: 12px; outline: none; background: #f8fafc; }
+
+    .native-staff-dropdown {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #38bdf8;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+      background: #ffffff;
+      margin-bottom: 12px;
+      outline: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      cursor: pointer;
+    }
 
     .wa-chat-box {
       background: #ece5dd;
@@ -268,6 +282,7 @@
     <i class="fa-solid fa-triangle-exclamation"></i> Offline / Signal Lost: Logs stored locally, owner will be alerted upon reconnection!
   </div>
 
+  <!-- LOGIN SCREEN -->
   <div id="mr-login-screen">
     <div class="login-card">
       <div style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
@@ -283,12 +298,11 @@
       <h2 style="font-size: 20px; font-weight: 900; color: #0b1329; letter-spacing: -0.5px;">Field Rx</h2>
       <p style="font-size: 11.5px; color: #64748b; margin-bottom: 14px;">Representative Field Desk</p>
 
-      <div style="text-align: left; margin-bottom: 4px; font-size: 10.5px; font-weight: 700; color: #475569;">SELECT STAFF NAME</div>
-      <div id="login-staff-trigger" class="custom-select-trigger" onclick="openStaffPicker()" style="margin-bottom:10px; border-color:#94a3b8;">
-        <span id="login-staff-label">Select Staff Member</span>
-        <i class="fa-solid fa-chevron-down" style="font-size:10px; color:#64748b;"></i>
-      </div>
-      <input type="hidden" id="login-staff-select">
+      <div style="text-align: left; margin-bottom: 5px; font-size: 10.5px; font-weight: 700; color: #475569;">SELECT STAFF NAME</div>
+      <select id="login-staff-select" class="native-staff-dropdown">
+        <option value="Rahul Sharma">Rahul Sharma</option>
+        <option value="Amit Verma">Amit Verma</option>
+      </select>
 
       <div style="text-align: left; margin-bottom: 4px; font-size: 10.5px; font-weight: 700; color: #475569;">ENTER 4-DIGIT PIN</div>
       <input type="password" id="login-pin-input" class="pin-input-field" maxlength="4" placeholder="••••" inputmode="numeric">
@@ -452,7 +466,7 @@
       </div>
     </div>
 
-    <!-- CUSTOM BOTTOM SHEET PICKER -->
+    <!-- CUSTOM BOTTOM SHEET PICKER FOR ROUTES & PRODUCTS -->
     <div id="sheet-picker-container" class="sheet-picker-overlay" onclick="closeSheetPicker(event)">
       <div class="sheet-picker-modal" onclick="event.stopPropagation()">
         <div class="sheet-header">
@@ -633,13 +647,13 @@
       currentPickerCallback = null;
     }
 
-    function openStaffPicker() {
-      const items = staffDataCache.map(s => ({ value: s.name, label: s.name, icon: "fa-solid fa-user-tie" }));
-      const cur = document.getElementById("login-staff-select").value;
-      openSheetPicker("Select Staff Member", items, cur, val => {
-        document.getElementById("login-staff-select").value = val;
-        document.getElementById("login-staff-label").innerText = val;
-      });
+    function updateStaffDropdownUI() {
+      const selectEl = document.getElementById("login-staff-select");
+      if (!selectEl) return;
+      const currentVal = selectEl.value;
+      selectEl.innerHTML = staffDataCache.map(s => 
+        `<option value="${s.name}" ${s.name === currentVal ? 'selected' : ''}>${s.name}</option>`
+      ).join('');
     }
 
     function openBeltPicker() {
@@ -1083,7 +1097,7 @@
     });
 
     // -------------------------------------------------------------
-    // AUTOMATIC MODEL DISCOVERY & DUAL-AUTH HEADERS FOR AQ. KEYS
+    // GEMINI MULTIMODAL VOICE SYSTEM (GEMINI 3.8 FLASH DIRECT TARGET)
     // -------------------------------------------------------------
     async function toggleVoiceRecognition() {
       const micBtn = document.getElementById("btn-wa-mic");
@@ -1189,11 +1203,11 @@ Return STRICTLY a pure JSON object without markdown fences, code blocks, or expl
   ]
 }`;
 
-          // MODEL FALLBACK SEQUENCE: Try newest active models first
+          // AAPKE GOOGLE AI STUDIO MEIN ACTIVE MODEL: Gemini 3.8 Flash
           const candidateModels = [
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-flash"
+            "gemini-3.8-flash",
+            "gemini-3.8",
+            "gemini-2.5-flash"
           ];
 
           let successData = null;
@@ -1453,12 +1467,7 @@ Return STRICTLY a pure JSON object without markdown fences, code blocks, or expl
           { name: "Rahul Sharma", pin: "1234" },
           { name: "Amit Verma", pin: "1234" }
         ];
-        
-        if (staffDataCache[0] && !document.getElementById("login-staff-select").value) {
-          document.getElementById("login-staff-select").value = staffDataCache[0].name;
-          document.getElementById("login-staff-label").innerText = staffDataCache[0].name;
-        }
-
+        updateStaffDropdownUI();
         checkExistingLoginSession();
       });
 
@@ -1874,10 +1883,6 @@ Return STRICTLY a pure JSON object without markdown fences, code blocks, or expl
     }
 
     window.addEventListener("DOMContentLoaded", () => {
-      if (staffDataCache[0]) {
-        document.getElementById("login-staff-select").value = staffDataCache[0].name;
-        document.getElementById("login-staff-label").innerText = staffDataCache[0].name;
-      }
       listenToMasterData();
     });
   </script>
