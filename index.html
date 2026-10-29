@@ -483,10 +483,10 @@
           <button onclick="closePOBBox()" style="background:#fee2e2; border:none; width:26px; height:26px; border-radius:50%; color:red; font-weight:900; cursor:pointer;">&times;</button>
         </div>
 
-        <!-- WHATSAPP VOICE NODE -->
+        <!-- WHATSAPP VOICE NODE (GEMINI MULTIMODAL POWERED) -->
         <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:8px; margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <span style="font-size:11px; font-weight:800; color:#15803d;"><i class="fa-brands fa-whatsapp" style="color:#25d366; font-size:13px;"></i> WhatsApp Voice Entry</span>
+            <span style="font-size:11px; font-weight:800; color:#15803d;"><i class="fa-brands fa-whatsapp" style="color:#25d366; font-size:13px;"></i> AI Voice Entry</span>
             <span id="voice-indicator" style="font-size:10px; color:#64748b; font-weight:700;">Mic Ready</span>
           </div>
 
@@ -560,6 +560,15 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    // -------------------------------------------------------------
+    // GEMINI MULTIMODAL AI VOICE SYSTEM (FREE TIER INTEGRATED)
+    // -------------------------------------------------------------
+    const GEMINI_API_KEY = "AQ.Ab8RN6LTeSL-PaOkaE2Xhqkm_zKNCsOMtpLYPJf9hXrhjE9-JQ";
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecordingAudio = false;
 
     let activeMR = "";
     let staffDataCache = [];
@@ -1094,152 +1103,175 @@
     });
 
     // -------------------------------------------------------------
-    // FEATURE 2: BILINGUAL (HINDI + ENGLISH) SMART VOICE POB & CASH PARSER
+    // FEATURE 2: GEMINI 1.5 FLASH MULTIMODAL AUDIO RECORDER & PARSER
     // -------------------------------------------------------------
-    let speechRecognitionInstance = null;
-    let isSpeechRecording = false;
-
-    function toggleVoiceRecognition() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const indicator = document.getElementById("voice-indicator");
+    async function toggleVoiceRecognition() {
       const micBtn = document.getElementById("btn-wa-mic");
+      const indicator = document.getElementById("voice-indicator");
       const speechDisplay = document.getElementById("wa-speech-display");
 
-      if (!SpeechRecognition) {
-        alert("Speech Recognition is not supported on this browser engine.");
-        indicator.innerText = "Not Supported";
-        return;
-      }
-
-      if (isSpeechRecording && speechRecognitionInstance) {
-        try { speechRecognitionInstance.stop(); } catch(e){}
-        isSpeechRecording = false;
+      if (isRecordingAudio) {
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+          mediaRecorder.stop();
+        }
+        isRecordingAudio = false;
         micBtn.classList.remove("recording");
-        indicator.innerText = "Mic Stopped";
+        indicator.innerText = "Gemini Processing...";
+        indicator.style.color = "#0284c7";
         return;
       }
 
       try {
-        speechRecognitionInstance = new SpeechRecognition();
-        speechRecognitionInstance.lang = 'hi-IN'; // Speech Recognition captures Hindi + English mix
-        speechRecognitionInstance.continuous = false;
-        speechRecognitionInstance.interimResults = true;
-        speechRecognitionInstance.maxAlternatives = 1;
-
-        speechRecognitionInstance.onstart = () => {
-          isSpeechRecording = true;
-          micBtn.classList.add("recording");
-          indicator.innerText = "Listening...";
-          indicator.style.color = "#15803d";
-          speechDisplay.innerHTML = `<span style="color:#15803d; font-weight:700;">● Recording...</span> <i>Boliye (Hindi ya English me)...</i>`;
-        };
-
-        speechRecognitionInstance.onresult = (event) => {
-          let transcript = "";
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            transcript += event.results[i][0].transcript;
-          }
-          speechDisplay.innerText = transcript;
-
-          if (event.results[0].isFinal) {
-            parseVoiceTranscript(transcript);
-            indicator.innerText = "Processed ✓";
-          }
-        };
-
-        speechRecognitionInstance.onerror = (event) => {
-          console.warn("Speech recognition error:", event.error);
-          micBtn.classList.remove("recording");
-          isSpeechRecording = false;
-          
-          if (event.error === 'not-allowed') {
-            indicator.innerText = "Mic Blocked";
-            alert("Microphone permission blocked hai! Settings me allow kijiye.");
-          } else if (event.error === 'no-speech') {
-            indicator.innerText = "No voice heard, tap again";
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        
+        let options = { mimeType: 'audio/webm' };
+        if (!MediaRecorder.isTypeSupported('audio/webm')) {
+          if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            options = { mimeType: 'audio/mp4' };
           } else {
-            indicator.innerText = "Mic Error (" + event.error + ")";
+            options = {};
+          }
+        }
+
+        mediaRecorder = new MediaRecorder(stream, options);
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            audioChunks.push(event.data);
           }
         };
 
-        speechRecognitionInstance.onend = () => {
-          micBtn.classList.remove("recording");
-          isSpeechRecording = false;
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach(track => track.stop());
+          const mimeType = mediaRecorder.mimeType || "audio/webm";
+          const audioBlob = new Blob(audioChunks, { type: mimeType });
+          await sendAudioToGeminiAI(audioBlob, mimeType);
         };
 
-        speechRecognitionInstance.start();
+        mediaRecorder.start();
+        isRecordingAudio = true;
+        micBtn.classList.add("recording");
+        indicator.innerText = "Listening...";
+        indicator.style.color = "#ef4444";
+        speechDisplay.innerHTML = `<span style="color:#ef4444; font-weight:800;">● Recording...</span> <i>Boliye (Hindi ya English me)...</i>`;
 
       } catch (err) {
-        console.error("Mic start exception:", err);
-        indicator.innerText = "Mic failed to start";
-        alert("Microphone error: " + err.message);
+        console.error("Mic access failed:", err);
+        indicator.innerText = "Mic Error";
+        alert("Microphone access error: " + err.message);
       }
     }
 
-    // MULTILINGUAL SMART PARSER (HANDLES DEVANAGARI HINDI & ENGLISH PHRASES)
-    function parseVoiceTranscript(rawText) {
-      let text = rawText.toLowerCase();
-      const allProducts = window.currentProducts || [];
+    async function sendAudioToGeminiAI(audioBlob, mimeType) {
+      const indicator = document.getElementById("voice-indicator");
+      const speechDisplay = document.getElementById("wa-speech-display");
 
-      // 1. EXTRACT CASH (HINDI & ENGLISH)
-      // Handles: cash 500, 500 cash, 500 rupaye, 500 rokad, 500 nagad, etc.
-      let extractedCash = 0;
-      const cashMatch = text.match(/(?:cash|rokad|nagad|rupya|rupaye|rs|inr|रुपये|रुपीस|कैश|नकद|रोकड़)[\s:]*([0-9]+)/i) || 
-                        text.match(/([0-9]+)[\s]*(?:cash|rokad|nagad|rupya|रुपये|रुपीस|कैश|नकद|रोकड़)/i);
-      if (cashMatch) {
-        extractedCash = parseFloat(cashMatch[1]) || 0;
-        document.getElementById("pob-cash-received").value = extractedCash;
-      }
+      indicator.innerText = "AI Analyzing...";
+      speechDisplay.innerHTML = `<i>Gemini AI transcripting and extracting...</i>`;
 
-      // 2. NORMALIZATION: MAP SPOKEN HINDI / VARIATIONS TO ENGLISH SYSTEM WORDS
-      let cleanText = text
-        // Quantity terms normalization:
-        .replace(/पीस|पिस|पीसी|पेस|बोतल|शीशी|डिब्बा|डब्बा|packet|pece|pcs|pc|shishi|bottle|dibba/g, " pc ")
-        // Rate terms normalization:
-        .replace(/रेट|भाव|रुपीस|रुपये|रुपया|दर|की दर|ke bhav|rate|bhav/g, " rate ")
-        // Product Brands Hindi Spoken Normalization to System Keywords:
-        .replace(/बेल्जियम|वेलजाइम|वाल्ज़ाइम|वैलजाइम|वेल्जिम|वेलजीम|वालजाइम|वालज़ाइम/g, "valzyme")
-        .replace(/फेरिसिट|फेरीसिट|फेरिसिट एक्सटी|फेरिसिट एक्स टी|फेरीसिट-एक्सटी/g, "fericit")
-        .replace(/वेलसेफ|वालसेफ|वेल्सेफ़|वालसेफ़|वेलसेफ ओ/g, "valcef");
+      const productsList = (window.currentProducts || []).map(p => p.name).join(", ");
 
-      // 3. MULTI-PRODUCT PARSING
-      allProducts.forEach(prod => {
-        const prodNameKeyword = prod.name.split(" ")[0].toLowerCase(); // e.g. valzyme, fericit, valcef
-        
-        if (cleanText.includes(prodNameKeyword)) {
-          // Patterns: "10 pc valzyme rate 30" OR "10 valzyme rate 30" OR "valzyme 10 pc"
-          const pattern1 = new RegExp(`([0-9]+)\\s*(?:pc)?\\s*${prodNameKeyword}(?:\\s*(?:rate)?\\s*([0-9]+))?`, "i");
-          const pattern2 = new RegExp(`${prodNameKeyword}\\s*([0-9]+)\\s*(?:pc)?(?:\\s*(?:rate)?\\s*([0-9]+))?`, "i");
-          
-          const match = cleanText.match(pattern1) || cleanText.match(pattern2);
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = async () => {
+        try {
+          const base64Audio = reader.result.split(',')[1];
+          const cleanMime = mimeType.split(';')[0];
 
-          let qty = 1;
-          let rate = prod.standardRate || 100;
+          const promptInstructions = `You are a medical representative order booking assistant for field force operations.
+Available Product List: [${productsList}].
+Listen to this audio recording carefully. The user might speak in Hindi, Devanagari, English, or Hinglish.
+Phonetic and common speech variations:
+- "belgium", "bel jaye", "bel jae", "valjim", "welzyme", "वालज़ाइम", "बेल्जियम" => refers to VALZYME products.
+- "fericit", "फेरीसिट" => refers to FERICIT products.
+- "valcef", "वेलसेफ" => refers to VALCEF products.
 
-          if (match) {
-            qty = parseInt(match[1], 10) || 1;
-            if (match[2]) {
-              rate = parseFloat(match[2]) || rate;
-            }
+Task:
+1. Extract exact spoken transcript.
+2. Extract numeric cash received (if mentioned, otherwise 0).
+3. Match each item to the closest product from Available Product List with:
+   - "product": exact product name from Available Product List
+   - "qty": numeric quantity (default 1)
+   - "rate": numeric rate per unit
+
+Return strictly valid JSON only without markdown fences:
+{
+  "transcript": "spoken words",
+  "cash": 0,
+  "items": [
+    { "product": "exact name from list", "qty": 5, "rate": 20 }
+  ]
+}`;
+
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: promptInstructions },
+                  {
+                    inline_data: {
+                      mime_type: cleanMime,
+                      data: base64Audio
+                    }
+                  }
+                ]
+              }]
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || data.error) {
+            throw new Error(data.error ? data.error.message : "AI Processing failed");
           }
 
-          const existingIdx = currentPOBItemsList.findIndex(item => item.product.toLowerCase().includes(prodNameKeyword));
-          if (existingIdx >= 0) {
-            currentPOBItemsList[existingIdx].qty = qty;
-            currentPOBItemsList[existingIdx].rate = rate;
-            currentPOBItemsList[existingIdx].amount = qty * rate;
-          } else {
-            currentPOBItemsList.push({
-              product: prod.name,
-              qty: qty,
-              rate: rate,
-              amount: qty * rate
+          const rawReply = data.candidates[0].content.parts[0].text;
+          const cleanedText = rawReply.replace(/```json/gi, '').replace(/```/g, '').trim();
+          const parsedResult = JSON.parse(cleanedText);
+
+          speechDisplay.innerText = parsedResult.transcript || "Order voice received";
+          indicator.innerText = "Processed ✓";
+          indicator.style.color = "#15803d";
+
+          if (parsedResult.cash && parseFloat(parsedResult.cash) > 0) {
+            document.getElementById("pob-cash-received").value = parseFloat(parsedResult.cash);
+          }
+
+          if (parsedResult.items && parsedResult.items.length > 0) {
+            parsedResult.items.forEach(item => {
+              const qty = parseInt(item.qty, 10) || 1;
+              const rate = parseFloat(item.rate) || 100;
+              const prodName = item.product;
+
+              const existingIdx = currentPOBItemsList.findIndex(x => x.product.toLowerCase().includes(prodName.toLowerCase()) || prodName.toLowerCase().includes(x.product.toLowerCase()));
+              if (existingIdx >= 0) {
+                currentPOBItemsList[existingIdx].qty = qty;
+                currentPOBItemsList[existingIdx].rate = rate;
+                currentPOBItemsList[existingIdx].amount = qty * rate;
+              } else {
+                currentPOBItemsList.push({
+                  product: prodName,
+                  qty: qty,
+                  rate: rate,
+                  amount: qty * rate
+                });
+              }
             });
-          }
-        }
-      });
 
-      renderPOBItemsList();
+            renderPOBItemsList();
+          }
+
+        } catch (err) {
+          console.error("Gemini Recognition Error:", err);
+          indicator.innerText = "Error";
+          indicator.style.color = "#ef4444";
+          speechDisplay.innerHTML = `<span style="color:red;">Error: ${err.message}</span>`;
+          alert("Gemini Voice Error: " + err.message);
+        }
+      };
     }
 
     function manualAddProductRow() {
@@ -1741,9 +1773,10 @@
     }
 
     function closePOBBox() { 
-      if (isSpeechRecording && speechRecognitionInstance) {
-        try { speechRecognitionInstance.stop(); } catch(e){}
+      if (isRecordingAudio && mediaRecorder && mediaRecorder.state !== "inactive") {
+        try { mediaRecorder.stop(); } catch(e){}
       }
+      isRecordingAudio = false;
       document.getElementById("pob-modal-dialog").style.display = "none"; 
     }
 
