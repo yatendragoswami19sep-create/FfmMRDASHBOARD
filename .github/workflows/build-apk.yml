@@ -24,7 +24,7 @@ jobs:
       - name: Install ImageMagick for Icon Resizing
         run: sudo apt-get update && sudo apt-get install -y imagemagick
 
-      - name: Build Android Project with Field Rx Branding & Centered Square Icon
+      - name: Build Android Project with Field Rx Branding & Voice Hardware Fix
         run: |
           mkdir app-build && cd app-build
           npm init -y
@@ -54,12 +54,43 @@ jobs:
 
           npx cap add android
 
-          # SQUARE PADDED LAUNCHER ICON (NO STRETCH / PERFECT SHAPE)
+          # 1. INJECT HARDWARE PERMISSIONS INTO ANDROIDMANIFEST.XML
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          PERMS='    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />'
+          sed -i "/<manifest/a $PERMS" $MANIFEST
+
+          # 2. OVERRIDE MAINACTIVITY.JAVA TO GRANT WEBVIEW MIC PERMISSIONS
+          MAIN_ACTIVITY="android/app/src/main/java/com/fieldrx/app/MainActivity.java"
+          cat << 'EOF' > $MAIN_ACTIVITY
+          package com.fieldrx.app;
+
+          import android.os.Bundle;
+          import android.webkit.PermissionRequest;
+          import android.webkit.WebChromeClient;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
+                  if (this.getBridge() != null && this.getBridge().getWebView() != null) {
+                      this.getBridge().getWebView().setWebChromeClient(new WebChromeClient() {
+                          @Override
+                          public void onPermissionRequest(final PermissionRequest request) {
+                              request.grant(request.getResources());
+                          }
+                      });
+                  }
+              }
+          }
+          EOF
+
+          # SQUARE PADDED LAUNCHER ICON
           if [ -f "../icon.png" ]; then
             echo "Custom icon found! Generating square fitted mipmap icons..."
             RES_DIR="android/app/src/main/res"
 
-            # Create square canvas with center fit
             convert ../icon.png -background "#0b1329" -gravity center -resize 512x512 -extent 512x512 square_icon.png
 
             convert square_icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher.png
