@@ -21,10 +21,33 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install ImageMagick for Icon Resizing
-        run: sudo apt-get update && sudo apt-get install -y imagemagick
+      - name: Install ImageMagick & Fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick fonts-dejavu-core fonts-liberation
 
-      - name: Build Android Project with Field Rx Branding & Voice Hardware Fix
+      - name: Generate Dynamic Premium Light Logo
+        run: |
+          # Create high-quality Light-themed Image Assets
+          convert -size 1024x1024 xc:"#F4F6FA" base_bg.png
+          
+          # Center shield vector / Icon graphics
+          convert -size 500x500 xc:none \
+            -draw "fill #0B1329 roundrectangle 50,50,450,450,45,45" \
+            -draw "fill #2DD4BF circle 250,250,250,340" \
+            -draw "fill #0284C7 circle 250,250,250,290" \
+            -draw "fill #FFFFFF stroke #38BDF8 stroke-width 4 circle 250,250,250,265" \
+            shield.png
+
+          # App Title Typography (Dark Navy and Modern Cyan Blue)
+          convert -size 800x120 xc:transparent -font "Liberation-Sans-Bold" -pointsize 80 \
+            -gravity center -draw "fill #0B1329 text -100,0 'Field' fill #00B4D8 text 120,0 'Rx'" label.png
+
+          # Overlays flat square asset
+          composite -gravity center -geometry +0-110 shield.png base_bg.png step1.png
+          composite -gravity center -geometry +0+250 label.png step1.png icon.png
+
+      - name: Build Android Project with Light Logo & Native Voice Prompt
         run: |
           mkdir app-build && cd app-build
           npm init -y
@@ -42,7 +65,8 @@ jobs:
             "appName": "Field Rx",
             "webDir": "www",
             "server": {
-              "androidScheme": "https"
+              "androidScheme": "https",
+              "hostname": "localhost"
             },
             "android": {
               "allowMixedContent": true,
@@ -54,31 +78,52 @@ jobs:
 
           npx cap add android
 
-          # 1. INJECT HARDWARE PERMISSIONS INTO ANDROIDMANIFEST.XML
+          # 1. INJECT SYSTEM REQUIREMENT PERMISSIONS (AUDIO, GPS & STORAGE NETWORK)
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           PERMS='    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />'
           sed -i "/<manifest/a $PERMS" $MANIFEST
 
-          # 2. OVERRIDE MAINACTIVITY.JAVA TO GRANT WEBVIEW MIC PERMISSIONS
+          # 2. GRANT NATIVE MEDIA ACCESS DIRECTLY & INJECT SYSTEM DYNAMIC DIALOGS
           MAIN_ACTIVITY="android/app/src/main/java/com/fieldrx/app/MainActivity.java"
           cat << 'EOF' > $MAIN_ACTIVITY
           package com.fieldrx.app;
 
+          import android.Manifest;
+          import android.content.pm.PackageManager;
           import android.os.Bundle;
           import android.webkit.PermissionRequest;
           import android.webkit.WebChromeClient;
+          import androidx.core.app.ActivityCompat;
+          import androidx.core.content.ContextCompat;
           import com.getcapacitor.BridgeActivity;
 
           public class MainActivity extends BridgeActivity {
+              private static final int REQUEST_CODE_VOICE = 200;
+
               @Override
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
+                  // APP START HOTEY HI RUNTIME ACCESS PROMPT DIKHAYEIN
+                  if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                      ActivityCompat.requestPermissions(this, new String[]{
+                          Manifest.permission.RECORD_AUDIO, 
+                          Manifest.permission.ACCESS_FINE_LOCATION,
+                          Manifest.permission.ACCESS_COARSE_LOCATION
+                      }, REQUEST_CODE_VOICE);
+                  }
+
+                  // WEBVIEW SYSTEM OVERRIDE MIC RESOURCE
                   if (this.getBridge() != null && this.getBridge().getWebView() != null) {
                       this.getBridge().getWebView().setWebChromeClient(new WebChromeClient() {
                           @Override
                           public void onPermissionRequest(final PermissionRequest request) {
-                              request.grant(request.getResources());
+                              runOnUiThread(new Runnable() {
+                                  @Override
+                                  public void run() {
+                                      request.grant(request.getResources());
+                                  }
+                              });
                           }
                       });
                   }
@@ -86,33 +131,29 @@ jobs:
           }
           EOF
 
-          # SQUARE PADDED LAUNCHER ICON
-          if [ -f "../icon.png" ]; then
-            echo "Custom icon found! Generating square fitted mipmap icons..."
-            RES_DIR="android/app/src/main/res"
+          # 3. CONVERT 512x512 HIGH-RES ICON (NO IMAGE FAILURE OVERRIDE)
+          RES_DIR="android/app/src/main/res"
+          cp ../icon.png .
+          
+          convert icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher.png
+          convert icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_round.png
+          convert icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_foreground.png
 
-            convert ../icon.png -background "#0b1329" -gravity center -resize 512x512 -extent 512x512 square_icon.png
+          convert icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher.png
+          convert icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_round.png
+          convert icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_foreground.png
 
-            convert square_icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher.png
-            convert square_icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_round.png
-            convert square_icon.png -resize 48x48 $RES_DIR/mipmap-mdpi/ic_launcher_foreground.png
+          convert icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher.png
+          convert icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_round.png
+          convert icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png
 
-            convert square_icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher.png
-            convert square_icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_round.png
-            convert square_icon.png -resize 72x72 $RES_DIR/mipmap-hdpi/ic_launcher_foreground.png
+          convert icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher.png
+          convert icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_round.png
+          convert icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png
 
-            convert square_icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher.png
-            convert square_icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_round.png
-            convert square_icon.png -resize 96x96 $RES_DIR/mipmap-xhdpi/ic_launcher_foreground.png
-
-            convert square_icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher.png
-            convert square_icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_round.png
-            convert square_icon.png -resize 144x144 $RES_DIR/mipmap-xxhdpi/ic_launcher_foreground.png
-
-            convert square_icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher.png
-            convert square_icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png
-            convert square_icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png
-          fi
+          convert icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher.png
+          convert icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_round.png
+          convert icon.png -resize 192x192 $RES_DIR/mipmap-xxxhdpi/ic_launcher_foreground.png
 
           npx cap sync android
 
