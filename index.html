@@ -7,11 +7,11 @@
   
   <meta name="theme-color" content="#0b1329">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
-  <link href="[https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap](https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap)" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <script src="[https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js](https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js)"></script>
-  <script src="[https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js](https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js)"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
   <style>
     :root { 
@@ -163,7 +163,8 @@
     .side-drawer { position: fixed; top: 0; right: -360px; width: 86%; max-width: 350px; height: 100%; background: #f8fafc; z-index: 500; overflow-y: auto; padding: 14px 12px; box-shadow: -5px 0 25px rgba(0,0,0,0.3); transition: right 0.28s ease-in-out; border-left: 2px solid var(--navy); }
     .side-drawer.drawer-open { right: 0; }
 
-    .sheet-picker-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); z-index: 700; display: none; align-items: flex-end; justify-content: center; }
+    /* FIXED Z-INDEX: 10005 so sheet picker displays ABOVE login screen */
+    .sheet-picker-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(4px); z-index: 10005; display: none; align-items: flex-end; justify-content: center; }
     .sheet-picker-modal { background: #ffffff; width: 100%; max-width: 440px; max-height: 72vh; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; animation: slideUp 0.22s ease-out; box-shadow: 0 -10px 30px rgba(0,0,0,0.3); }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     .sheet-header { padding: 14px 16px; border-bottom: 1.5px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-radius: 20px 20px 0 0; }
@@ -263,12 +264,10 @@
 </head>
 <body>
 
-  <!-- OFFLINE WARNING STRIP -->
   <div id="offline-status-banner" class="net-offline-alert">
     <i class="fa-solid fa-triangle-exclamation"></i> Offline / Signal Lost: Logs stored locally, owner will be alerted upon reconnection!
   </div>
 
-  <!-- LOGIN SCREEN -->
   <div id="mr-login-screen">
     <div class="login-card">
       <div style="display:flex; justify-content:center; align-items:center; margin-bottom:10px;">
@@ -307,7 +306,6 @@
   </div>
 
   <div class="app-screen">
-    <!-- NAVBAR -->
     <nav class="top-navbar">
       <div style="display:flex; align-items:center; gap:8px;">
         <svg width="26" height="26" viewBox="0 0 100 100" fill="none">
@@ -334,7 +332,6 @@
       </div>
     </nav>
 
-    <!-- SUMMARY -->
     <div id="collections-dropdown-panel">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
         <div style="background: #1e293b; border: 1.5px solid #f59e0b; border-radius: 7px; padding: 8px;">
@@ -348,15 +345,12 @@
       </div>
     </div>
 
-    <!-- SESSION BAR -->
     <div class="session-info-bar">
       <span>Status: <b id="lbl-punch-status">Punched Out</b></span>
       <span>Session: <b id="lbl-session-timer">00m 00s</b></span>
     </div>
 
-    <!-- HOME PAGE -->
     <div class="dashboard-body">
-      <!-- 50M GEOFENCE RADAR BAR -->
       <div class="geofence-radar-badge" id="geofence-radar-box">
         <span><i class="fa-solid fa-bullseye"></i> Geofence Radar: <b id="lbl-radar-status">Idle (Punch In to Scan)</b></span>
         <span id="lbl-radar-timer" style="font-weight:800; color:#d97706;"></span>
@@ -384,7 +378,6 @@
 
     <div id="drawer-backdrop" class="drawer-overlay" onclick="closeSideDrawer()"></div>
 
-    <!-- DRAWER -->
     <div id="side-drawer-panel" class="side-drawer">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1.5px solid #cbd5e1;">
         <div style="font-size:13.5px; font-weight:900; color:#0b1329; display:flex; align-items:center; gap:6px;">
@@ -393,7 +386,6 @@
         <button onclick="closeSideDrawer()" style="background:#fee2e2; border:none; width:26px; height:26px; border-radius:50%; color:red; font-weight:900; cursor:pointer;">&times;</button>
       </div>
 
-      <!-- CREATE BELT -->
       <div style="background:linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border:2px solid #eab308; border-radius:10px; padding:10px; margin-bottom:12px;">
         <div style="font-size:12px; font-weight:900; color:#854d0e; margin-bottom:7px; text-transform:uppercase;">
           <i class="fa-solid fa-route"></i> Create Route / Belt
@@ -427,7 +419,6 @@
         </button>
       </div>
 
-      <!-- ADD DOCTOR -->
       <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border:2px solid #1b4d3e; border-radius:10px; padding:10px; margin-bottom:12px;">
         <div style="font-size:12px; font-weight:900; color:#14532d; margin-bottom:7px; text-transform:uppercase;">
           <i class="fa-solid fa-user-doctor"></i> Add Doctor to Route
@@ -461,7 +452,7 @@
       </div>
     </div>
 
-    <!-- CUSTOM BOTTOM SHEET PICKER -->
+    <!-- SHEET PICKER CONTAINER: z-index 10005 to float above login -->
     <div id="sheet-picker-container" class="sheet-picker-overlay" onclick="closeSheetPicker(event)">
       <div class="sheet-picker-modal" onclick="event.stopPropagation()">
         <div class="sheet-header">
@@ -472,7 +463,6 @@
       </div>
     </div>
 
-    <!-- POB & CASH MODAL (UNLOCKED & READY TO BOOK) -->
     <div id="pob-modal-dialog" class="popup-modal-overlay">
       <div class="popup-modal-content" style="border: 2px solid var(--emerald-dark);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -483,7 +473,6 @@
           <button onclick="closePOBBox()" style="background:#fee2e2; border:none; width:26px; height:26px; border-radius:50%; color:red; font-weight:900; cursor:pointer;">&times;</button>
         </div>
 
-        <!-- WHATSAPP VOICE NODE (GEMINI MULTIMODAL POWERED) -->
         <div style="background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:8px; margin-bottom:8px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <span style="font-size:11px; font-weight:800; color:#15803d;"><i class="fa-brands fa-whatsapp" style="color:#25d366; font-size:13px;"></i> AI Voice Entry</span>
@@ -503,14 +492,12 @@
           </div>
         </div>
 
-        <!-- MULTI PRODUCT LIST TABLE -->
         <div style="font-size:11px; font-weight:800; color:#0f172a; margin-bottom:4px; display:flex; justify-content:space-between;">
           <span>Booked Items List:</span>
           <span id="lbl-item-count" style="color:#0284c7; font-weight:800;">0 Items</span>
         </div>
         <div id="pob-items-container" style="max-height:100px; overflow-y:auto; margin-bottom:8px;"></div>
 
-        <!-- MANUAL ENTRY SECTION -->
         <div style="background:#f8fafc; border:1.2px solid #cbd5e1; border-radius:8px; padding:7px; margin-bottom:8px;">
           <div style="font-size:11px; font-weight:800; color:#334155; margin-bottom:5px;">Manual Product Add:</div>
           
@@ -555,15 +542,12 @@
       storageBucket: "ffms-723c1.firebasestorage.app",
       messagingSenderId: "851436685685",
       appId: "1:851436685685:web:67e2753bdf672b864beb3c",
-      databaseURL: "[https://ffms-723c1-default-rtdb.asia-southeast1.firebasedatabase.app](https://ffms-723c1-default-rtdb.asia-southeast1.firebasedatabase.app)"
+      databaseURL: "https://ffms-723c1-default-rtdb.asia-southeast1.firebasedatabase.app"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // -------------------------------------------------------------
-    // GEMINI MULTIMODAL AI VOICE SYSTEM (FREE TIER INTEGRATED)
-    // -------------------------------------------------------------
     const GEMINI_API_KEY = "AQ.Ab8RN6LTeSL-PaOkaE2Xhqkm_zKNCsOMtpLYPJf9hXrhjE9-JQ";
 
     let mediaRecorder = null;
@@ -571,7 +555,10 @@
     let isRecordingAudio = false;
 
     let activeMR = "";
-    let staffDataCache = [];
+    let staffDataCache = [
+      { name: "Rahul Sharma", pin: "1234" },
+      { name: "Amit Verma", pin: "1234" }
+    ];
     let punchedIn = false;
     let punchInStartTime = 0;
     let sessionTimerInterval = null;
@@ -582,13 +569,11 @@
     
     let currentPOBItemsList = [];
 
-    // GEOFENCE SETTINGS: 60M RADIUS WITH 3-MINUTE DWELL
     const GEOFENCE_RADIUS_METERS = 60;
     const REQUIRED_DWELL_SECONDS = 180;
     let activeGeofenceTracker = null;
     let geofenceLiveWatcherId = null;
 
-    // 35-MINUTE BACKGROUND LOCATION PING
     let ping35MinInterval = null;
     const PING_INTERVAL_MS = 35 * 60 * 1000;
 
@@ -596,6 +581,8 @@
       "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
       "2nd Monday", "2nd Tuesday", "2nd Wednesday", "2nd Thursday", "2nd Friday", "2nd Saturday"
     ];
+
+    let currentPickerCallback = null;
 
     function openSideDrawer() {
       document.getElementById("side-drawer-panel").classList.add("drawer-open");
@@ -897,9 +884,6 @@
       return Math.round(R * c);
     }
 
-    // -------------------------------------------------------------
-    // FEATURE 1: 50M-60M AUTOMATIC GEOFENCE AUTO-CHECKIN + 3-MINUTES TIMER
-    // -------------------------------------------------------------
     function startGeofenceRadarEngine() {
       if (geofenceLiveWatcherId) navigator.geolocation.clearWatch(geofenceLiveWatcherId);
       
@@ -1013,9 +997,6 @@
       );
     }
 
-    // -------------------------------------------------------------
-    // FEATURE 4: 35-MINUTE BACKGROUND LOCATION PING
-    // -------------------------------------------------------------
     function start35MinLocationPing() {
       if (ping35MinInterval) clearInterval(ping35MinInterval);
       sendPeriodicLocationPing();
@@ -1062,9 +1043,6 @@
       document.getElementById("lbl-radar-timer").innerText = "";
     }
 
-    // -------------------------------------------------------------
-    // FEATURE 3: NETWORK / SIGNAL DISCONNECT DETECTION
-    // -------------------------------------------------------------
     let offlineStartTime = null;
 
     window.addEventListener('offline', () => {
@@ -1103,7 +1081,7 @@
     });
 
     // -------------------------------------------------------------
-    // FEATURE 2: GEMINI MULTIMODAL AUDIO RECORDER & PARSER (AUTO-FALLBACK ENGINE)
+    // GEMINI MULTIMODAL AUDIO RECORDER WITH MODEL FALLBACK & RETRY
     // -------------------------------------------------------------
     async function toggleVoiceRecognition() {
       const micBtn = document.getElementById("btn-wa-mic");
@@ -1168,7 +1146,7 @@
       const speechDisplay = document.getElementById("wa-speech-display");
 
       indicator.innerText = "AI Analyzing...";
-      speechDisplay.innerHTML = `<i>Gemini AI transcripting and extracting...</i>`;
+      speechDisplay.innerHTML = `<i>Gemini AI analyzing audio...</i>`;
 
       const productsList = (window.currentProducts || []).map(p => p.name).join(", ");
 
@@ -1217,7 +1195,7 @@ Return STRICTLY a pure JSON object without markdown fences, code blocks, or expl
 
           for (const modelName of candidateModels) {
             try {
-              const url = `[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){modelName}:generateContent?key=${GEMINI_API_KEY}`;
+              const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`;
               const response = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1465,7 +1443,10 @@ Return STRICTLY a pure JSON object without markdown fences, code blocks, or expl
     function listenToMasterData() {
       db.ref("staff").on("value", snapshot => {
         const val = snapshot.val();
-        staffDataCache = val ? Object.values(val) : [{ name: "Rahul Sharma", pin: "1234" }, { name: "Amit Verma", pin: "1234" }];
+        staffDataCache = val ? Object.values(val) : [
+          { name: "Rahul Sharma", pin: "1234" },
+          { name: "Amit Verma", pin: "1234" }
+        ];
         
         if (staffDataCache[0] && !document.getElementById("login-staff-select").value) {
           document.getElementById("login-staff-select").value = staffDataCache[0].name;
@@ -1688,7 +1669,6 @@ Return STRICTLY a pure JSON object without markdown fences, code blocks, or expl
                 </button>
               `}
 
-              <!-- ALWAYS UNLOCKED & READY TO BOOK -->
               <button class="btn-main btn-green" style="flex:1; cursor:pointer;" onclick="openPOBBox('${d.name}', ${d.lat}, ${d.lng}, '${d.area}', '${d.callCompletedTime || ''}', ${d.lastCallTimestamp || 0})">
                 <i class="fa-brands fa-whatsapp"></i> Voice POB/Cash
               </button>
@@ -1888,6 +1868,11 @@ Return STRICTLY a pure JSON object without markdown fences, code blocks, or expl
     }
 
     window.addEventListener("DOMContentLoaded", () => {
+      // PREFILL FIRST STAFF IMMEDIATELY SO IT'S NEVER BLANK
+      if (staffDataCache[0]) {
+        document.getElementById("login-staff-select").value = staffDataCache[0].name;
+        document.getElementById("login-staff-label").innerText = staffDataCache[0].name;
+      }
       listenToMasterData();
     });
   </script>
