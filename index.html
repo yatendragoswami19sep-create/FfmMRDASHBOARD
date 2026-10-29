@@ -472,7 +472,7 @@
       </div>
     </div>
 
-    <!-- POB & CASH MODAL (UNLOCKED & ALWAYS READY TO BOOK ANYWHERE) -->
+    <!-- POB & CASH MODAL (UNLOCKED & READY TO BOOK) -->
     <div id="pob-modal-dialog" class="popup-modal-overlay">
       <div class="popup-modal-content" style="border: 2px solid var(--emerald-dark);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -492,7 +492,7 @@
 
           <div class="wa-chat-box" id="wa-chat-bubble-box">
             <div class="wa-bubble" id="wa-speech-display">
-              🎙️ <i>Mic dabakar boliye (e.g. "10 pc Valzyme aur 10 pc Fericit cash 500")...</i>
+              🎙️ <i>Mic dabakar boliye (e.g. "10 पीस बेल्जियम 30 रुपीस और 500 कैश")...</i>
             </div>
           </div>
 
@@ -1094,7 +1094,7 @@
     });
 
     // -------------------------------------------------------------
-    // FEATURE 2: WHATSAPP-STYLE VOICE POB + CASH ENGINE (HIGH-COMPATIBILITY)
+    // FEATURE 2: BILINGUAL (HINDI + ENGLISH) SMART VOICE POB & CASH PARSER
     // -------------------------------------------------------------
     let speechRecognitionInstance = null;
     let isSpeechRecording = false;
@@ -1106,8 +1106,8 @@
       const speechDisplay = document.getElementById("wa-speech-display");
 
       if (!SpeechRecognition) {
-        alert("Speech Recognition is not supported on this browser engine. Please open inside Google Chrome with HTTPS connection.");
-        indicator.innerText = "Browser Not Supported";
+        alert("Speech Recognition is not supported on this browser engine.");
+        indicator.innerText = "Not Supported";
         return;
       }
 
@@ -1121,7 +1121,7 @@
 
       try {
         speechRecognitionInstance = new SpeechRecognition();
-        speechRecognitionInstance.lang = 'hi-IN';
+        speechRecognitionInstance.lang = 'hi-IN'; // Speech Recognition captures Hindi + English mix
         speechRecognitionInstance.continuous = false;
         speechRecognitionInstance.interimResults = true;
         speechRecognitionInstance.maxAlternatives = 1;
@@ -1131,7 +1131,7 @@
           micBtn.classList.add("recording");
           indicator.innerText = "Listening...";
           indicator.style.color = "#15803d";
-          speechDisplay.innerHTML = `<span style="color:#15803d; font-weight:700;">● Recording...</span> <i>Boliye (e.g. 10 pc Valzyme aur 10 pc Fericit cash 500)...</i>`;
+          speechDisplay.innerHTML = `<span style="color:#15803d; font-weight:700;">● Recording...</span> <i>Boliye (Hindi ya English me)...</i>`;
         };
 
         speechRecognitionInstance.onresult = (event) => {
@@ -1153,8 +1153,8 @@
           isSpeechRecording = false;
           
           if (event.error === 'not-allowed') {
-            indicator.innerText = "Mic Blocked (Permission Denied)";
-            alert("Microphone permission blocked hai! Chrome Settings > Site Settings > Microphone mein allow kijiye.");
+            indicator.innerText = "Mic Blocked";
+            alert("Microphone permission blocked hai! Settings me allow kijiye.");
           } else if (event.error === 'no-speech') {
             indicator.innerText = "No voice heard, tap again";
           } else {
@@ -1176,29 +1176,42 @@
       }
     }
 
+    // MULTILINGUAL SMART PARSER (HANDLES DEVANAGARI HINDI & ENGLISH PHRASES)
     function parseVoiceTranscript(rawText) {
-      const text = rawText.toLowerCase();
+      let text = rawText.toLowerCase();
       const allProducts = window.currentProducts || [];
 
-      // 1. EXTRACT CASH
-      const cashMatch = text.match(/(?:cash|rokad|nagad|rupya|rupaye|rs|inr)[\s:]*([0-9]+)/i) || 
-                        text.match(/([0-9]+)[\s]*(?:cash|rokad|nagad|rupya)/i);
+      // 1. EXTRACT CASH (HINDI & ENGLISH)
+      // Handles: cash 500, 500 cash, 500 rupaye, 500 rokad, 500 nagad, etc.
+      let extractedCash = 0;
+      const cashMatch = text.match(/(?:cash|rokad|nagad|rupya|rupaye|rs|inr|रुपये|रुपीस|कैश|नकद|रोकड़)[\s:]*([0-9]+)/i) || 
+                        text.match(/([0-9]+)[\s]*(?:cash|rokad|nagad|rupya|रुपये|रुपीस|कैश|नकद|रोकड़)/i);
       if (cashMatch) {
-        const extractedCash = parseFloat(cashMatch[1]) || 0;
+        extractedCash = parseFloat(cashMatch[1]) || 0;
         document.getElementById("pob-cash-received").value = extractedCash;
       }
 
-      // 2. PARSE MULTIPLE PRODUCTS
+      // 2. NORMALIZATION: MAP SPOKEN HINDI / VARIATIONS TO ENGLISH SYSTEM WORDS
       let cleanText = text
-        .replace(/pece|pcs|pc|shishi|bottle|dibba|packet/g, " pc ")
-        .replace(/rate|bhav|ke bhav/g, " rate ");
+        // Quantity terms normalization:
+        .replace(/पीस|पिस|पीसी|पेस|बोतल|शीशी|डिब्बा|डब्बा|packet|pece|pcs|pc|shishi|bottle|dibba/g, " pc ")
+        // Rate terms normalization:
+        .replace(/रेट|भाव|रुपीस|रुपये|रुपया|दर|की दर|ke bhav|rate|bhav/g, " rate ")
+        // Product Brands Hindi Spoken Normalization to System Keywords:
+        .replace(/बेल्जियम|वेलजाइम|वाल्ज़ाइम|वैलजाइम|वेल्जिम|वेलजीम|वालजाइम|वालज़ाइम/g, "valzyme")
+        .replace(/फेरिसिट|फेरीसिट|फेरिसिट एक्सटी|फेरिसिट एक्स टी|फेरीसिट-एक्सटी/g, "fericit")
+        .replace(/वेलसेफ|वालसेफ|वेल्सेफ़|वालसेफ़|वेलसेफ ओ/g, "valcef");
 
+      // 3. MULTI-PRODUCT PARSING
       allProducts.forEach(prod => {
-        const prodNameKeyword = prod.name.split(" ")[0].toLowerCase();
+        const prodNameKeyword = prod.name.split(" ")[0].toLowerCase(); // e.g. valzyme, fericit, valcef
         
         if (cleanText.includes(prodNameKeyword)) {
-          const regexPattern = new RegExp(`([0-9]+)\\s*(?:pc|pcs)?\\s*${prodNameKeyword}(?:\\s*(?:rate|bhav)\\s*([0-9]+))?`, "i");
-          const match = cleanText.match(regexPattern);
+          // Patterns: "10 pc valzyme rate 30" OR "10 valzyme rate 30" OR "valzyme 10 pc"
+          const pattern1 = new RegExp(`([0-9]+)\\s*(?:pc)?\\s*${prodNameKeyword}(?:\\s*(?:rate)?\\s*([0-9]+))?`, "i");
+          const pattern2 = new RegExp(`${prodNameKeyword}\\s*([0-9]+)\\s*(?:pc)?(?:\\s*(?:rate)?\\s*([0-9]+))?`, "i");
+          
+          const match = cleanText.match(pattern1) || cleanText.match(pattern2);
 
           let qty = 1;
           let rate = prod.standardRate || 100;
@@ -1615,7 +1628,7 @@
                 </button>
               `}
 
-              <!-- ALWAYS UNLOCKED & READY TO BOOK ANYWHERE -->
+              <!-- ALWAYS UNLOCKED & READY TO BOOK -->
               <button class="btn-main btn-green" style="flex:1; cursor:pointer;" onclick="openPOBBox('${d.name}', ${d.lat}, ${d.lng}, '${d.area}', '${d.callCompletedTime || ''}', ${d.lastCallTimestamp || 0})">
                 <i class="fa-brands fa-whatsapp"></i> Voice POB/Cash
               </button>
@@ -1721,7 +1734,7 @@
       document.getElementById("pob-manual-rate").value = "";
       document.getElementById("pob-qty").value = "";
       document.getElementById("pob-cash-received").value = "";
-      document.getElementById("wa-speech-display").innerHTML = `🎙️ <i>Mic dabakar boliye (e.g. "10 pc Valzyme aur 10 pc Fericit cash 500")...</i>`;
+      document.getElementById("wa-speech-display").innerHTML = `🎙️ <i>Mic dabakar boliye (e.g. "10 पीस बेल्जियम 30 रुपीस और 500 कैश")...</i>`;
       document.getElementById("voice-indicator").innerText = "Mic Ready";
 
       document.getElementById("pob-modal-dialog").style.display = "flex";
