@@ -81,12 +81,13 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
 
+    /* Added gap between doctor/MR cards */
     .doctor-item { 
       background: #ffffff; 
       border: 2px solid #64748b; 
       border-radius: 10px; 
-      padding: 10px 12px; 
-      margin-bottom: 9px; 
+      padding: 11px 13px; 
+      margin-bottom: 14px; 
       box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
       position: relative;
     }
@@ -850,7 +851,7 @@
         err => {
           document.getElementById("lbl-radar-status").innerText = "GPS Signal Searching...";
         },
-        { enableHighAccuracy: true, maximumAge: 3000, timeout: 8000 }
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
       );
     }
 
@@ -984,7 +985,7 @@
           "blue",
           { lat: lat, lng: lng }
         );
-      }, err => {}, { enableHighAccuracy: true, timeout: 6000 });
+      }, err => {}, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
     }
 
     function stopGeofenceScanAndPing() {
@@ -1144,7 +1145,7 @@
           executePunchIn(today, timeStr, pos.coords.latitude, pos.coords.longitude);
         }, err => {
           executePunchIn(today, timeStr, 27.2152, 78.0090);
-        }, { enableHighAccuracy: true, timeout: 6000 });
+        }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
       } else {
         if (!confirm("Do you want to Punch Out for today?")) return;
         if (!navigator.geolocation) {
@@ -1155,7 +1156,7 @@
           executePunchOut(today, timeStr, pos.coords.latitude, pos.coords.longitude);
         }, err => {
           executePunchOut(today, timeStr, 27.2152, 78.0090);
-        }, { enableHighAccuracy: true, timeout: 6000 });
+        }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
       }
     }
 
@@ -1285,7 +1286,7 @@
         capturedDocLat = pos.coords.latitude;
         capturedDocLng = pos.coords.longitude;
         statusEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Locked: ${capturedDocLat.toFixed(4)}, ${capturedDocLng.toFixed(4)}`;
-      }, () => { alert("Please turn on GPS location!"); }, { enableHighAccuracy: true, timeout: 8000 });
+      }, () => { alert("Please turn on GPS location!"); }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
     }
 
     function createNewBelt() {
@@ -1398,7 +1399,7 @@
         });
       }, () => {
         alert("Unable to fetch GPS. Please check location settings.");
-      }, { enableHighAccuracy: true, timeout: 8000 });
+      }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
     }
 
     function loadBeltDoctors() {
