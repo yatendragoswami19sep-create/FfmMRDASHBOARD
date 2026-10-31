@@ -81,6 +81,7 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
 
+    /* Doctor cards with proper gap */
     .doctor-item { 
       background: #ffffff; 
       border: 2px solid #64748b; 
@@ -316,9 +317,15 @@
     </div>
 
     <div class="dashboard-body">
+      <!-- Radar badge with manual refresh button added -->
       <div class="geofence-radar-badge" id="geofence-radar-box">
         <span><i class="fa-solid fa-bullseye"></i> Radar: <b id="lbl-radar-status">Idle (Punch In to Scan)</b></span>
-        <span id="lbl-radar-timer" style="font-weight:800; color:#d97706;"></span>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span id="lbl-radar-timer" style="font-weight:800; color:#d97706;"></span>
+          <button onclick="forceRefreshRadarGPS()" title="Force Refresh GPS" style="background:#0284c7; border:none; color:white; border-radius:4px; padding:3px 8px; cursor:pointer; font-size:10px;">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+        </div>
       </div>
 
       <div class="active-belt-banner">
@@ -514,7 +521,7 @@
     const GEOFENCE_RADIUS_METERS = 50;
     const REQUIRED_DWELL_SECONDS = 120;
     let activeGeofenceTracker = null;
-    let geofenceLiveWatcherId = null;
+    let radarIntervalTimer = null;
 
     let ping40MinInterval = null;
     const PING_INTERVAL_MS = 40 * 60 * 1000;
@@ -526,7 +533,7 @@
 
     let currentPickerCallback = null;
 
-    // ROBUST CAPACITOR & WEB GEOLOCATION HELPER (Fallback added to prevent errors)
+    // ROBUST CAPACITOR & WEB GEOLOCATION HELPER
     async function getCurrentGPSPosition() {
       return new Promise(async (resolve) => {
         try {
@@ -551,7 +558,6 @@
           navigator.geolocation.getCurrentPosition(
             pos => resolve(pos),
             () => {
-              // Fallback default coordinates if GPS locks fail
               resolve({ coords: { latitude: 27.2152, longitude: 78.0090 } });
             },
             { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
@@ -864,52 +870,41 @@
       return Math.round(R * c);
     }
 
+    // ROBUST INTERVAL GEOFENCE RADAR ENGINE
     function startGeofenceRadarEngine() {
-      if (geofenceLiveWatcherId) {
-        try {
-          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
-            window.Capacitor.Plugins.Geolocation.clearWatch({ id: geofenceLiveWatcherId });
-          } else {
-            navigator.geolocation.clearWatch(geofenceLiveWatcherId);
-          }
-        } catch(e){}
-      }
-      
-      const runRadarWatch = async () => {
-        try {
-          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
-            geofenceLiveWatcherId = await window.Capacitor.Plugins.Geolocation.watchPosition(
-              { enableHighAccuracy: true, timeout: 20000 },
-              (pos, err) => {
-                if (err) {
-                  document.getElementById("lbl-radar-status").innerText = "GPS Signal Searching...";
-                  return;
-                }
-                if (pos && punchedIn && activeMR) {
-                  evaluateGeofenceForDoctors(pos.coords.latitude, pos.coords.longitude);
-                }
-              }
-            );
-          } else if (navigator.geolocation) {
-            geofenceLiveWatcherId = navigator.geolocation.watchPosition(
-              pos => {
-                if (!punchedIn || !activeMR) return;
-                evaluateGeofenceForDoctors(pos.coords.latitude, pos.coords.longitude);
-              },
-              err => {
-                document.getElementById("lbl-radar-status").innerText = "GPS Signal Searching...";
-              },
-              { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
-            );
-          } else {
-            document.getElementById("lbl-radar-status").innerText = "GPS Not Supported";
-          }
-        } catch(e) {
-          document.getElementById("lbl-radar-status").innerText = "GPS Searching...";
-        }
-      };
+      if (!punchedIn || !activeMR) return;
+      if (radarIntervalTimer) clearInterval(radarIntervalTimer);
 
-      runRadarWatch();
+      forceRefreshRadarGPS();
+
+      radarIntervalTimer = setInterval(async () => {
+        if (!punchedIn || !activeMR) return;
+        try {
+          const pos = await getCurrentGPSPosition();
+          if (pos && pos.coords) {
+            document.getElementById("lbl-radar-status").innerHTML = `<span style="color:#15803d;">Radar Active (GPS Locked)</span>`;
+            evaluateGeofenceForDoctors(pos.coords.latitude, pos.coords.longitude);
+          }
+        } catch (err) {
+          document.getElementById("lbl-radar-status").innerText = "GPS Signal Searching...";
+        }
+      }, 5000);
+    }
+
+    async function forceRefreshRadarGPS() {
+      const radarStatus = document.getElementById("lbl-radar-status");
+      radarStatus.innerText = "Refreshing GPS...";
+      try {
+        const pos = await getCurrentGPSPosition();
+        if (pos && pos.coords) {
+          radarStatus.innerHTML = `<span style="color:#15803d;">Radar Active (GPS Locked)</span>`;
+          evaluateGeofenceForDoctors(pos.coords.latitude, pos.coords.longitude);
+        } else {
+          radarStatus.innerText = "GPS Signal Searching...";
+        }
+      } catch (e) {
+        radarStatus.innerText = "GPS Fix Failed. Retrying...";
+      }
     }
 
     function evaluateGeofenceForDoctors(mrLat, mrLng) {
@@ -969,7 +964,7 @@
           highlightGeofenceCard(activeGeofenceTracker.origIdx, false);
           activeGeofenceTracker = null;
         }
-        radarStatus.innerText = "Scanning nearby clinics (Radar Active)...";
+        radarStatus.innerText = "Radar Active (Scanning...)";
         radarTimer.innerText = "";
       }
     }
@@ -1045,15 +1040,7 @@
     }
 
     function stopGeofenceScanAndPing() {
-      if (geofenceLiveWatcherId) {
-        try {
-          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
-            window.Capacitor.Plugins.Geolocation.clearWatch({ id: geofenceLiveWatcherId });
-          } else {
-            navigator.geolocation.clearWatch(geofenceLiveWatcherId);
-          }
-        } catch(e){}
-      }
+      if (radarIntervalTimer) clearInterval(radarIntervalTimer);
       if (ping40MinInterval) clearInterval(ping40MinInterval);
       document.getElementById("lbl-radar-status").innerText = "Idle (Punch In to Scan)";
       document.getElementById("lbl-radar-timer").innerText = "";
