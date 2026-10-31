@@ -12,6 +12,8 @@
 
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <!-- Capacitor Geolocation Native Plugin Script -->
+  <script src="https://unpkg.com/@capacitor/geolocation@latest/dist/plugin.js"></script>
 
   <style>
     :root { 
@@ -33,7 +35,6 @@
     
     .top-navbar { background: var(--navy); color: white; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 2px solid #1e293b; }
     
-    /* Updated Punch Button: wider & more spacious */
     .punch-btn { padding: 7px 14px; min-width: 105px; border-radius: 8px; font-size: 11.5px; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; color: white; background: #334155; transition: all 0.2s ease; }
     .punch-btn.punched-in { background: var(--emerald) !important; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
     
@@ -81,7 +82,6 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
 
-    /* Added gap between doctor/MR cards */
     .doctor-item { 
       background: #ffffff; 
       border: 2px solid #64748b; 
@@ -214,7 +214,6 @@
       display: none;
     }
 
-    /* Restyled Route Conflict Action Box */
     .conflict-action-box {
       background: #fff5f5;
       border: 1.5px solid #feb2b2;
@@ -273,7 +272,6 @@
   </div>
 
   <div class="app-screen">
-    <!-- Header with larger spacing & clear typography -->
     <nav class="top-navbar">
       <div style="display:flex; align-items:center; gap:10px;">
         <svg width="30" height="30" viewBox="0 0 100 100" fill="none">
@@ -369,7 +367,6 @@
         </div>
         <input type="hidden" id="new-belt-day" value="Monday">
 
-        <!-- Restyled Route Conflict Box -->
         <div id="day-engagement-status" class="conflict-action-box" style="display:none;">
           <div style="font-size:11px; font-weight:800; color:#c53030; display:flex; align-items:center; gap:5px;">
             <i class="fa-solid fa-triangle-exclamation"></i> Day Assigned: <b id="engaged-belt-name"></b>
@@ -433,7 +430,7 @@
       </div>
     </div>
 
-    <!-- MANUAL POB & CASH MODAL (Voice & Telegram removed) -->
+    <!-- MANUAL POB & CASH MODAL -->
     <div id="pob-modal-dialog" class="popup-modal-overlay">
       <div class="popup-modal-content" style="border: 2px solid var(--emerald-dark);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -515,13 +512,11 @@
     
     let currentPOBItemsList = [];
 
-    // STRICT GEOFENCE RULE: 50 Meters & 2 Minutes (120 seconds) dwell time
     const GEOFENCE_RADIUS_METERS = 50;
     const REQUIRED_DWELL_SECONDS = 120;
     let activeGeofenceTracker = null;
     let geofenceLiveWatcherId = null;
 
-    // BACKGROUND LOCATION PING EVERY 40 MINUTES
     let ping40MinInterval = null;
     const PING_INTERVAL_MS = 40 * 60 * 1000;
 
@@ -531,6 +526,36 @@
     ];
 
     let currentPickerCallback = null;
+
+    // CAPACITOR NATIVE GPS HELPER FUNCTION
+    async function getCurrentGPSPosition() {
+      return new Promise(async (resolve, reject) => {
+        try {
+          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
+            const coordinates = await window.Capacitor.Plugins.Geolocation.getCurrentPosition({
+              enableHighAccuracy: true,
+              timeout: 20000
+            });
+            resolve({
+              coords: {
+                latitude: coordinates.coords.latitude,
+                longitude: coordinates.coords.longitude
+              }
+            });
+          } else if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              pos => resolve(pos),
+              err => reject(err),
+              { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+            );
+          } else {
+            reject(new Error("Geolocation not supported"));
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
 
     function openSideDrawer() {
       document.getElementById("side-drawer-panel").classList.add("drawer-open");
@@ -834,25 +859,52 @@
       return Math.round(R * c);
     }
 
-    // STRICT GEOFENCE RADAR ENGINE (50 meters radius & 2 minutes dwell time)
     function startGeofenceRadarEngine() {
-      if (geofenceLiveWatcherId) navigator.geolocation.clearWatch(geofenceLiveWatcherId);
-      
-      if (!navigator.geolocation) {
-        document.getElementById("lbl-radar-status").innerText = "GPS Not Supported";
-        return;
+      if (geofenceLiveWatcherId) {
+        try {
+          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
+            window.Capacitor.Plugins.Geolocation.clearWatch({ id: geofenceLiveWatcherId });
+          } else {
+            navigator.geolocation.clearWatch(geofenceLiveWatcherId);
+          }
+        } catch(e){}
       }
+      
+      const runRadarWatch = async () => {
+        try {
+          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
+            geofenceLiveWatcherId = await window.Capacitor.Plugins.Geolocation.watchPosition(
+              { enableHighAccuracy: true, timeout: 20000 },
+              (pos, err) => {
+                if (err) {
+                  document.getElementById("lbl-radar-status").innerText = "GPS Signal Searching...";
+                  return;
+                }
+                if (pos && punchedIn && activeMR) {
+                  evaluateGeofenceForDoctors(pos.coords.latitude, pos.coords.longitude);
+                }
+              }
+            );
+          } else if (navigator.geolocation) {
+            geofenceLiveWatcherId = navigator.geolocation.watchPosition(
+              pos => {
+                if (!punchedIn || !activeMR) return;
+                evaluateGeofenceForDoctors(pos.coords.latitude, pos.coords.longitude);
+              },
+              err => {
+                document.getElementById("lbl-radar-status").innerText = "GPS Signal Searching...";
+              },
+              { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+            );
+          } else {
+            document.getElementById("lbl-radar-status").innerText = "GPS Not Supported";
+          }
+        } catch(e) {
+          document.getElementById("lbl-radar-status").innerText = "GPS Searching...";
+        }
+      };
 
-      geofenceLiveWatcherId = navigator.geolocation.watchPosition(
-        pos => {
-          if (!punchedIn || !activeMR) return;
-          evaluateGeofenceForDoctors(pos.coords.latitude, pos.coords.longitude);
-        },
-        err => {
-          document.getElementById("lbl-radar-status").innerText = "GPS Signal Searching...";
-        },
-        { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
-      );
+      runRadarWatch();
     }
 
     function evaluateGeofenceForDoctors(mrLat, mrLng) {
@@ -948,7 +1000,6 @@
       );
     }
 
-    // 40 MINUTES SILENT BACKGROUND LOCATION PING
     function start40MinLocationPing() {
       if (ping40MinInterval) clearInterval(ping40MinInterval);
       sendSilentBackgroundPing();
@@ -960,9 +1011,9 @@
       }, PING_INTERVAL_MS);
     }
 
-    function sendSilentBackgroundPing() {
-      if (!navigator.geolocation) return;
-      navigator.geolocation.getCurrentPosition(pos => {
+    async function sendSilentBackgroundPing() {
+      try {
+        const pos = await getCurrentGPSPosition();
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         const now = new Date();
@@ -985,11 +1036,19 @@
           "blue",
           { lat: lat, lng: lng }
         );
-      }, err => {}, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+      } catch (err) {}
     }
 
     function stopGeofenceScanAndPing() {
-      if (geofenceLiveWatcherId) navigator.geolocation.clearWatch(geofenceLiveWatcherId);
+      if (geofenceLiveWatcherId) {
+        try {
+          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
+            window.Capacitor.Plugins.Geolocation.clearWatch({ id: geofenceLiveWatcherId });
+          } else {
+            navigator.geolocation.clearWatch(geofenceLiveWatcherId);
+          }
+        } catch(e){}
+      }
       if (ping40MinInterval) clearInterval(ping40MinInterval);
       document.getElementById("lbl-radar-status").innerText = "Idle (Punch In to Scan)";
       document.getElementById("lbl-radar-timer").innerText = "";
@@ -1130,33 +1189,26 @@
       }
     }
 
-    // PUNCH IN & OUT WITH GPS LOCATION ATTACHED TO NOTIFICATIONS
-    function toggleStaffPunch() {
+    async function toggleStaffPunch() {
       if (!activeMR) return alert("Please login first!");
       const today = getTodayDateString();
       const timeStr = formatTime12Hour(new Date());
 
       if (!punchedIn) {
-        if (!navigator.geolocation) {
-          executePunchIn(today, timeStr, 27.2152, 78.0090);
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(pos => {
+        try {
+          const pos = await getCurrentGPSPosition();
           executePunchIn(today, timeStr, pos.coords.latitude, pos.coords.longitude);
-        }, err => {
+        } catch (err) {
           executePunchIn(today, timeStr, 27.2152, 78.0090);
-        }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+        }
       } else {
         if (!confirm("Do you want to Punch Out for today?")) return;
-        if (!navigator.geolocation) {
-          executePunchOut(today, timeStr, 27.2152, 78.0090);
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(pos => {
+        try {
+          const pos = await getCurrentGPSPosition();
           executePunchOut(today, timeStr, pos.coords.latitude, pos.coords.longitude);
-        }, err => {
+        } catch (err) {
           executePunchOut(today, timeStr, 27.2152, 78.0090);
-        }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+        }
       }
     }
 
@@ -1278,15 +1330,18 @@
       });
     }
 
-    function captureDoctorGPS() {
+    async function captureDoctorGPS() {
       const statusEl = document.getElementById("gps-status-indicator");
-      if (!navigator.geolocation) return alert("GPS not supported!");
       statusEl.innerHTML = `Fetching coordinates...`;
-      navigator.geolocation.getCurrentPosition(pos => {
+      try {
+        const pos = await getCurrentGPSPosition();
         capturedDocLat = pos.coords.latitude;
         capturedDocLng = pos.coords.longitude;
         statusEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Locked: ${capturedDocLat.toFixed(4)}, ${capturedDocLng.toFixed(4)}`;
-      }, () => { alert("Please turn on GPS location!"); }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+      } catch (e) {
+        alert("Please turn on GPS location or check permissions!");
+        statusEl.innerHTML = `GPS Status: Failed`;
+      }
     }
 
     function createNewBelt() {
@@ -1368,13 +1423,12 @@
       closeSideDrawer();
     }
 
-    function updateDoctorLocationLive(beltId, docOriginalIdx, docName) {
-      if (!navigator.geolocation) return alert("GPS not available!");
-      
+    async function updateDoctorLocationLive(beltId, docOriginalIdx, docName) {
       const confirmReset = confirm(`Update Dr. ${docName}'s clinic location to your CURRENT GPS location?`);
       if (!confirmReset) return;
 
-      navigator.geolocation.getCurrentPosition(pos => {
+      try {
+        const pos = await getCurrentGPSPosition();
         const newLat = pos.coords.latitude;
         const newLng = pos.coords.longitude;
 
@@ -1397,9 +1451,9 @@
           alert(`Dr. ${docName}'s location updated to (${newLat.toFixed(4)}, ${newLng.toFixed(4)})`);
           loadBeltDoctors();
         });
-      }, () => {
+      } catch (e) {
         alert("Unable to fetch GPS. Please check location settings.");
-      }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+      }
     }
 
     function loadBeltDoctors() {
