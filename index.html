@@ -536,41 +536,41 @@
 
     async function getCurrentGPSPosition() {
       return new Promise(async (resolve, reject) => {
+        // 1. Sabse pehle Capacitor Geolocation plugin try karenge (Android APK / localhost ke liye sabse best)
+        try {
+          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
+            const coordinates = await window.Capacitor.Plugins.Geolocation.getCurrentPosition({
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 0
+            });
+            if (coordinates && coordinates.coords) {
+              resolve({
+                coords: {
+                  latitude: coordinates.coords.latitude,
+                  longitude: coordinates.coords.longitude
+                }
+              });
+              return;
+            }
+          }
+        } catch (capacitorErr) {
+          console.warn("Capacitor geolocation fallback:", capacitorErr);
+        }
+
+        // 2. Agar Capacitor plugin kaam na kare, toh standard browser geolocation use karenge
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             pos => resolve(pos),
             err => {
-              tryWithCapacitor(resolve, reject);
+              reject(new Error("GPS fix failed. Please ensure location is enabled and try again."));
             },
             { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
           );
         } else {
-          tryWithCapacitor(resolve, reject);
+          reject(new Error("Geolocation is not supported by this environment."));
         }
       });
-    }
-
-    async function tryWithCapacitor(resolve, reject) {
-      try {
-        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
-          const coordinates = await window.Capacitor.Plugins.Geolocation.getCurrentPosition({
-            enableHighAccuracy: true,
-            timeout: 15000
-          });
-          if (coordinates && coordinates.coords) {
-            resolve({
-              coords: {
-                latitude: coordinates.coords.latitude,
-                longitude: coordinates.coords.longitude
-              }
-            });
-            return;
-          }
-        }
-        reject(new Error("GPS fix failed. Please ensure location is enabled and try again."));
-      } catch(e) {
-        reject(new Error("GPS fix failed. Please ensure location is enabled and try again."));
-      }
     }
 
     function openSideDrawer() {
