@@ -51,13 +51,21 @@ jobs:
         run: |
           mkdir app-build && cd app-build
           npm init -y
-          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5
+          npm install @capacitor/core@5 @capacitor/cli@5 @capacitor/android@5 @capacitor/geolocation@5 esbuild
           
           npx cap init "Field Rx" "com.fieldrx.app" --web-dir www
           mkdir www
           cp ../index.html www/index.html
-          
-          sed -i 's/<\/head>/<script src="capacitor.js"><\/script><\/head>/g' www/index.html
+
+          # Bundle the Capacitor Geolocation JS proxy for this plain-HTML app.
+          cat << 'EOF' > gps-bridge.js
+          import { Geolocation } from '@capacitor/geolocation';
+          window.FieldRxGeolocation = Geolocation;
+          EOF
+          npx esbuild gps-bridge.js --bundle --format=iife --outfile=www/gps-bridge.js
+
+          # Load Capacitor bridge first, then the registered Geolocation plugin proxy.
+          sed -i 's#</head>#<script src="capacitor.js"></script><script src="gps-bridge.js"></script></head>#g' www/index.html
 
           cat << 'EOF' > capacitor.config.json
           {
@@ -92,6 +100,7 @@ jobs:
           import android.content.pm.PackageManager;
           import android.os.Bundle;
           import android.webkit.PermissionRequest;
+          import android.webkit.GeolocationPermissions;
           import android.webkit.WebChromeClient;
           import androidx.core.app.ActivityCompat;
           import androidx.core.content.ContextCompat;
@@ -104,12 +113,11 @@ jobs:
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // APP START HOTEY HI RUNTIME ACCESS PROMPT DIKHAYEIN
+                  // Ask for microphone independently. Capacitor Geolocation requests
+                  // location permission at the moment the user starts a GPS action.
                   if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                       ActivityCompat.requestPermissions(this, new String[]{
-                          Manifest.permission.RECORD_AUDIO, 
-                          Manifest.permission.ACCESS_FINE_LOCATION,
-                          Manifest.permission.ACCESS_COARSE_LOCATION
+                          Manifest.permission.RECORD_AUDIO
                       }, REQUEST_CODE_VOICE);
                   }
 
@@ -124,6 +132,11 @@ jobs:
                                       request.grant(request.getResources());
                                   }
                               });
+                          }
+
+                          @Override
+                          public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                              callback.invoke(origin, true, false);
                           }
                       });
                   }
