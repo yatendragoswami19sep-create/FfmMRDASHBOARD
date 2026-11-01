@@ -12,7 +12,6 @@
 
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-  <script src="https://unpkg.com/@capacitor/geolocation@5/dist/plugin.js"></script>
 
   <style>
     :root { 
@@ -557,7 +556,7 @@
       }
 
       if (isNativeApp) {
-        const geo = capacitor.Plugins && capacitor.Plugins.Geolocation;
+        const geo = window.FieldRxGeolocation || (capacitor.Plugins && capacitor.Plugins.Geolocation);
         if (!geo || typeof geo.getCurrentPosition !== "function") {
           throw new Error("GPS plugin missing in this APK. Rebuild APK after installing @capacitor/geolocation.");
         }
