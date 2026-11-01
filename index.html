@@ -83,7 +83,6 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
 
-    /* Doctor cards with proper gap */
     .doctor-item { 
       background: #ffffff; 
       border: 2px solid #e2e8f0; 
@@ -536,7 +535,7 @@
     let currentPickerCallback = null;
 
     async function getCurrentGPSPosition() {
-      return new Promise(async (resolve) => {
+      return new Promise(async (resolve, reject) => {
         try {
           if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
             const coordinates = await window.Capacitor.Plugins.Geolocation.getCurrentPosition({
@@ -558,13 +557,13 @@
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             pos => resolve(pos),
-            () => {
-              resolve({ coords: { latitude: 27.2152, longitude: 78.0090 } });
+            err => {
+              reject(new Error("GPS fix failed. Please ensure location is enabled and try again."));
             },
-            { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
           );
         } else {
-          resolve({ coords: { latitude: 27.2152, longitude: 78.0090 } });
+          reject(new Error("Geolocation is not supported by this browser."));
         }
       });
     }
@@ -1191,7 +1190,7 @@
           const pos = await getCurrentGPSPosition();
           executePunchIn(today, timeStr, pos.coords.latitude, pos.coords.longitude);
         } catch (err) {
-          executePunchIn(today, timeStr, 27.2152, 78.0090);
+          alert("GPS Error: " + err.message);
         }
       } else {
         if (!confirm("Do you want to Punch Out for today?")) return;
@@ -1324,14 +1323,15 @@
 
     async function captureDoctorGPS() {
       const statusEl = document.getElementById("gps-status-indicator");
-      statusEl.innerHTML = `Fetching coordinates...`;
+      statusEl.innerHTML = `Fetching live GPS coordinates...`;
       try {
         const pos = await getCurrentGPSPosition();
         capturedDocLat = pos.coords.latitude;
         capturedDocLng = pos.coords.longitude;
         statusEl.innerHTML = `<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Locked: ${capturedDocLat.toFixed(4)}, ${capturedDocLng.toFixed(4)}`;
       } catch (e) {
-        statusEl.innerHTML = `GPS Status: Failed`;
+        statusEl.innerHTML = `<span style="color:red;">GPS Failed: ${e.message}</span>`;
+        alert(e.message);
       }
     }
 
@@ -1382,14 +1382,15 @@
       if (!b) return;
       if (!b.doctors) b.doctors = [];
 
-      const docLat = capturedDocLat || 27.2152;
-      const docLng = capturedDocLng || 78.0090;
+      if (!capturedDocLat || !capturedDocLng) {
+        return alert("Please click the 'GPS' button first to lock your live location before registering the doctor!");
+      }
 
       b.doctors.push({
         id: "doc_" + Date.now(),
         name, area, mobile, landmark,
-        lat: docLat,
-        lng: docLng,
+        lat: capturedDocLat,
+        lng: capturedDocLng,
         callCompletedTime: null,
         lastCallDate: null
       });
@@ -1401,10 +1402,10 @@
         `${activeMR} added Dr. ${name} (${area}) to route`,
         "doctor_add",
         "blue",
-        { doctor: name, area: area, lat: docLat, lng: docLng }
+        { doctor: name, area: area, lat: capturedDocLat, lng: capturedDocLng }
       );
 
-      alert(`${name} registered successfully!`);
+      alert(`${name} registered successfully with live GPS!`);
       document.getElementById("doc-name").value = "";
       document.getElementById("doc-area").value = "";
       document.getElementById("doc-mobile").value = "";
@@ -1443,7 +1444,7 @@
           loadBeltDoctors();
         });
       } catch (e) {
-        alert("Unable to fetch GPS. Please check location settings.");
+        alert("GPS Error: " + e.message);
       }
     }
 
@@ -1680,7 +1681,6 @@
       }
       listenToMasterData();
     });
-    <!-- live update -->
   </script>
 </body>
 </html>
