@@ -30,7 +30,6 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
     
-    /* Perfect Centering Fix for Desktop and Mobile */
     body { background: #0b1329; min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
     
     .app-screen { width: 100%; max-width: 440px; height: 100vh; max-height: 100vh; background: var(--bg); display: flex; flex-direction: column; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.3); overflow-x: hidden; }
@@ -84,7 +83,7 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
 
-    /* Stylish Doctor Cards with generous gap */
+    /* Doctor cards with proper gap */
     .doctor-item { 
       background: #ffffff; 
       border: 2px solid #e2e8f0; 
@@ -193,7 +192,6 @@
     .popup-modal-content { background: white; border-radius: 14px; width: 100%; max-width: 420px; padding: 18px; border: 2px solid var(--border-dark); max-height: 90vh; overflow-y: auto; box-shadow: 0 15px 35px rgba(0,0,0,0.3); }
     #collections-dropdown-panel { display: none; background: #0b1329; border-bottom: 2px solid #334155; padding: 10px 12px; color: white; }
 
-    /* Perfectly Centered Login Screen Fix */
     #mr-login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #0b1329 0%, #172554 100%); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .login-card { background: #ffffff; width: 100%; max-width: 360px; border-radius: 18px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); text-align: center; border: 1.5px solid #cbd5e1; }
     .pin-input-field { letter-spacing: 12px; font-size: 22px; font-weight: 800; text-align: center; padding: 10px; border: 2px solid #94a3b8; border-radius: 8px; width: 100%; margin-bottom: 14px; outline: none; background: #f8fafc; }
@@ -219,7 +217,6 @@
       display: none;
     }
 
-    /* Stylish Route Conflict / Shift / Swap Action Box */
     .conflict-action-box {
       background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
       border: 2px solid #f56565;
@@ -241,7 +238,6 @@
     <i class="fa-solid fa-triangle-exclamation"></i> Offline / Signal Lost: Logs stored locally, owner will be alerted upon reconnection!
   </div>
 
-  <!-- Perfectly Centered Login Screen -->
   <div id="mr-login-screen">
     <div class="login-card">
       <div style="display:flex; justify-content:center; align-items:center; margin-bottom:12px;">
@@ -325,7 +321,6 @@
     </div>
 
     <div class="dashboard-body">
-      <!-- Radar badge with manual refresh button -->
       <div class="geofence-radar-badge" id="geofence-radar-box">
         <span><i class="fa-solid fa-bullseye"></i> Radar: <b id="lbl-radar-status">Idle (Punch In to Scan)</b></span>
         <div style="display:flex; align-items:center; gap:6px;">
@@ -366,7 +361,6 @@
         <button onclick="closeSideDrawer()" style="background:#fee2e2; border:none; width:26px; height:26px; border-radius:50%; color:red; font-weight:900; cursor:pointer;">&times;</button>
       </div>
 
-      <!-- Stylish Route Creation Card -->
       <div style="background:linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border:2px solid #eab308; border-radius:12px; padding:12px; margin-bottom:14px; box-shadow: 0 4px 12px rgba(234, 179, 8, 0.12);">
         <div style="font-size:12.5px; font-weight:900; color:#854d0e; margin-bottom:8px; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
           <i class="fa-solid fa-route" style="color:#d97706;"></i> Create Route / Belt
@@ -382,7 +376,6 @@
         </div>
         <input type="hidden" id="new-belt-day" value="Monday">
 
-        <!-- Stylish Route Conflict / Shift / Swap Action Box -->
         <div id="day-engagement-status" class="conflict-action-box" style="display:none;">
           <div style="font-size:11.5px; font-weight:900; color:#9b2c2c; display:flex; align-items:center; gap:6px;">
             <i class="fa-solid fa-triangle-exclamation" style="font-size:13px;"></i> Day Assigned: <b id="engaged-belt-name"></b>
@@ -403,7 +396,6 @@
         </button>
       </div>
 
-      <!-- Stylish Doctor Registration Card -->
       <div style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border:2px solid #1b4d3e; border-radius:12px; padding:12px; margin-bottom:14px; box-shadow: 0 4px 12px rgba(27,77,62,0.12);">
         <div style="font-size:12.5px; font-weight:900; color:#14532d; margin-bottom:8px; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
           <i class="fa-solid fa-user-doctor" style="color:#10b981;"></i> Add Doctor to Route
@@ -437,7 +429,6 @@
       </div>
     </div>
 
-    <!-- CUSTOM BOTTOM SHEET PICKER -->
     <div id="sheet-picker-container" class="sheet-picker-overlay" onclick="closeSheetPicker(event)">
       <div class="sheet-picker-modal" onclick="event.stopPropagation()">
         <div class="sheet-header">
@@ -448,7 +439,6 @@
       </div>
     </div>
 
-    <!-- MANUAL POB & CASH MODAL -->
     <div id="pob-modal-dialog" class="popup-modal-overlay">
       <div class="popup-modal-content" style="border: 2px solid var(--emerald-dark);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -545,7 +535,6 @@
 
     let currentPickerCallback = null;
 
-    // ROBUST CAPACITOR & WEB GEOLOCATION HELPER
     async function getCurrentGPSPosition() {
       return new Promise(async (resolve) => {
         try {
@@ -882,7 +871,6 @@
       return Math.round(R * c);
     }
 
-    // ROBUST INTERVAL GEOFENCE RADAR ENGINE
     function startGeofenceRadarEngine() {
       if (!punchedIn || !activeMR) return;
       if (radarIntervalTimer) clearInterval(radarIntervalTimer);
@@ -1500,7 +1488,6 @@
                 <div style="font-size:11px; font-weight:600; color:#475569; margin-top:3px;">
                   <i class="fa-solid fa-location-dot" style="color:#0284c7;"></i> ${d.area} ${d.landmark ? '(' + d.landmark + ')' : ''}
                 </div>
-                <!-- Google Maps View Link Added -->
                 <div style="margin-top: 4px;">
                   <a href="https://www.google.com/maps/search/?api=1&query=${d.lat},${d.lng}" target="_blank" style="font-size:11px; font-weight:700; color:#0284c7; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
                     <i class="fa-solid fa-map-location-dot"></i> View Saved Location on Map
