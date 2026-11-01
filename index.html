@@ -536,36 +536,41 @@
 
     async function getCurrentGPSPosition() {
       return new Promise(async (resolve, reject) => {
-        try {
-          if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
-            const coordinates = await window.Capacitor.Plugins.Geolocation.getCurrentPosition({
-              enableHighAccuracy: true,
-              timeout: 15000
-            });
-            if (coordinates && coordinates.coords) {
-              resolve({
-                coords: {
-                  latitude: coordinates.coords.latitude,
-                  longitude: coordinates.coords.longitude
-                }
-              });
-              return;
-            }
-          }
-        } catch(e) {}
-
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             pos => resolve(pos),
             err => {
-              reject(new Error("GPS fix failed. Please ensure location is enabled and try again."));
+              tryWithCapacitor(resolve, reject);
             },
             { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
           );
         } else {
-          reject(new Error("Geolocation is not supported by this browser."));
+          tryWithCapacitor(resolve, reject);
         }
       });
+    }
+
+    async function tryWithCapacitor(resolve, reject) {
+      try {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) {
+          const coordinates = await window.Capacitor.Plugins.Geolocation.getCurrentPosition({
+            enableHighAccuracy: true,
+            timeout: 15000
+          });
+          if (coordinates && coordinates.coords) {
+            resolve({
+              coords: {
+                latitude: coordinates.coords.latitude,
+                longitude: coordinates.coords.longitude
+              }
+            });
+            return;
+          }
+        }
+        reject(new Error("GPS fix failed. Please ensure location is enabled and try again."));
+      } catch(e) {
+        reject(new Error("GPS fix failed. Please ensure location is enabled and try again."));
+      }
     }
 
     function openSideDrawer() {
@@ -1682,6 +1687,5 @@
       listenToMasterData();
     });
   </script>
-  <!-- check -->
 </body>
 </html>
