@@ -225,6 +225,77 @@
       gap: 6px;
       margin-top: 8px;
     }
+
+
+    /* MODERN MEDICAL TEAL THEME — visual-only overrides; app logic is unchanged */
+    :root {
+      --primary: #0f9f8f;
+      --primary-dark: #087f73;
+      --emerald: #16a879;
+      --emerald-dark: #087f5b;
+      --navy: #073b3a;
+      --bg: #f2faf8;
+      --card: #ffffff;
+      --border-dark: #b7d8d1;
+      --text: #173b38;
+    }
+    body { background: #dceee9; }
+    .app-screen { background: #f3faf8; box-shadow: 0 12px 36px rgba(7, 59, 58, .16); }
+    .top-navbar {
+      background: linear-gradient(120deg, #073b3a 0%, #0b6258 58%, #118577 100%);
+      border-bottom: 0;
+      box-shadow: 0 4px 16px rgba(7, 59, 58, .18);
+    }
+    .top-navbar svg { filter: drop-shadow(0 1px 2px rgba(0,0,0,.16)); }
+    .punch-btn { background: #315b57; border-radius: 10px; }
+    .punch-btn.punched-in { background: #16a879 !important; box-shadow: 0 0 0 3px rgba(22,168,121,.18); }
+    .nav-action-btn { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.24); border-radius: 10px; }
+    .session-info-bar { background: #e1f4ef; color: #087f73; border-bottom: 1px solid #c5e7dd; }
+    .dashboard-body { padding: 15px 13px 42px; }
+    .geofence-radar-badge {
+      background: #e8f7f2; border: 1px solid #a9dace; border-radius: 12px;
+      color: #087f73; box-shadow: 0 2px 8px rgba(8,127,115,.05);
+    }
+    .active-belt-banner {
+      background: linear-gradient(135deg, #07534d 0%, #087f73 58%, #13a18d 100%);
+      border: 1px solid #72c9b7; border-radius: 16px;
+      box-shadow: 0 7px 18px rgba(8,127,115,.16);
+    }
+    .custom-select-trigger { border-color: #8bcfc0; border-radius: 10px; }
+    .doctor-item {
+      background: #fff; border: 1px solid #d3e8e2; border-radius: 14px;
+      padding: 13px 14px; margin-bottom: 11px;
+      box-shadow: 0 4px 13px rgba(19,75,67,.055);
+    }
+    .doctor-item.pending-card { border-color: #9acfc2; border-left: 4px solid #0f9f8f; background: #fff; }
+    .doctor-item.in-geofence { border-color: #e5b65c; border-left: 4px solid #d99a26; background: #fffaf0; }
+    .doctor-item.visit-completed { border-color: #8bcdb4; border-left: 4px solid #16a879; background: #effaf5; }
+    .seq-badge { background: #0b756b; }
+    .doctor-name-text { color: #173b38; }
+    .btn-main { border-radius: 10px; box-shadow: 0 2px 6px rgba(8,127,115,.10); }
+    .btn-blue { background: #0f9f8f; border-color: #087f73; }
+    .btn-green { background: #16a879; border-color: #087f5b; }
+    .side-drawer { background: #f4fbf9; border-left: 2px solid #0b756b; }
+    .sheet-header { background: #edf8f5; }
+    .sheet-item-card { border-color: #d4e9e3; border-radius: 12px; }
+    .sheet-item-card:active, .sheet-item-card.selected { background: #e5f6f0; border-color: #0f9f8f; }
+    .popup-modal-content { border-color: #b7d8d1; border-radius: 17px; box-shadow: 0 14px 35px rgba(7,59,58,.15); }
+    #collections-dropdown-panel { background: #073b3a; border-bottom: 1px solid #2c8378; }
+    #mr-login-screen { background: radial-gradient(circle at top right, #168f80 0%, #0b6258 38%, #073b3a 100%); }
+    .login-card { border: 1px solid #c6e5dc; border-radius: 22px; box-shadow: 0 22px 55px rgba(0,0,0,.24); }
+    .pin-input-field { border-color: #a8d5ca; }
+    .text-input { border-color: #c3ddd6; border-radius: 9px; }
+    .text-input:focus, .pin-input-field:focus { border-color: #0f9f8f; box-shadow: 0 0 0 3px rgba(15,159,143,.12); }
+    .parsed-item-tag { background: #eff8f5; border-color: #d0e7df; }
+    .conflict-action-box { border-radius: 12px; }
+    button { transition: filter .16s ease, transform .16s ease; }
+    button:active { filter: brightness(.96); }
+    @media (max-width: 360px) {
+      .top-navbar { padding-left: 10px; padding-right: 10px; }
+      .punch-btn { min-width: 94px; padding-left: 9px; padding-right: 9px; }
+      .dashboard-body { padding-left: 10px; padding-right: 10px; }
+    }
+
   </style>
 </head>
 <body>
